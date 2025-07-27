@@ -89,21 +89,7 @@ body {
 }
 
 #rocket-event { 
-  margin: 1rem auto; 
-  max-width: 1280px; 
-  padding: 0.4rem; 
-  border: 2px solid #ff6b6b; 
-  background: linear-gradient(45deg, #333, #555); 
-  color: #fff; 
   display: none; 
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  animation: rocketAppear 0.5s ease-out;
-}
-
-@keyframes rocketAppear {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
 }
 
 .pokedex-screen {
@@ -2120,7 +2106,6 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
         }, 500);
       }
 
-      document.getElementById("rocket-event").style.display = "none";
       document.getElementById("round-screen").style.display = "block";
       document.getElementById("round-screen").classList.remove("quiz-bg");
       document.getElementById("round-screen").classList.add("silhouette-bg");
@@ -2198,7 +2183,6 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
         return;
       }
 
-      document.getElementById("rocket-event").style.display = "block";
       const silEl = document.getElementById("silhouette");
       silEl.src = "sprites/pokemon_000.png";
       silEl.style.imageRendering = "pixelated";
@@ -2223,12 +2207,12 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
         message = `Team Rocket stole your ${stolenName}!`;
         
         // Add some particles for the theft
-        createParticles(document.getElementById('rocket-particles'), 15, '#ff6b6b');
+        createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
       } else {
         message = "Team Rocket tried to steal a Pokémon, but failed!";
       }
 
-      document.getElementById("rocket-message").textContent = message;
+      qArea.textContent = message;
 
       setTimeout(() => {
         silEl.style.width = "";
@@ -2494,4 +2478,3 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
   </script>
 </body>
 </html>
-    
