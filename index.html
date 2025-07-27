@@ -458,6 +458,9 @@ body {
       <span>📅</span>
       <span>Daily Challenge!</span>
     </div>
+  <div class="stat-item" id="sound-toggle" style="cursor: pointer;">
+      🔊 Sound: ON
+    </div>
   </div>
 
   <!-- Team Rocket Event -->
@@ -1870,6 +1873,12 @@ body {
     let totalShinyCount = 0;
     let gameAchievements = {};
     let soundEnabled = true;
+
+document.getElementById('sound-toggle').addEventListener('click', () => {
+  soundEnabled = !soundEnabled;
+  document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+});
+
 
     // Sound effects (using data URLs for compatibility)
     const sounds = {
