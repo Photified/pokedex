@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Who's That Pokémon?</title>
+  <style>
+body { margin: 0; padding: 0; font-family: sans-serif; background: #abf1f9; color: #000; text-align: center; }
+    #rocket-event { margin: 1rem auto; max-width: 1280px; padding: 1rem; border: 2px solid #000; background: #333; color: #fff; display: none; }
+    .pokedex-screen {
+      position: relative;
+      width: 1280px;
+ padding-top: 40px;
+      /* Use viewport height instead of a fixed pixel height so the Pokédex screen and the grid
+         fit within the same page without requiring vertical scrolling. */
+      height: 70vh;
+      margin: 1rem auto;
+      border: none;
+      outline: none;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .silhouette-bg { background-image: url('pokedex_bg_silhouette.png'); }
+    .quiz-bg { background-image: url('pokedex_bg_blue.png'); }
+    .display-area { position: absolute; top: 22%; left: 17%; width: 40%; height: 60%; }
+    /* Shift the silhouette 20px left and 20px down for better centering */
+    .display-area img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      /* Shift the silhouette 20px to the right and 55px down (15px right + 5px down from previous offset) and scale it down by 25% */
+      transform: translate(20px, 55px) scale(0.75);
+      transform-origin: top left;
+    }
+    /* Position the question text over the dark grey panel */
+   .question-area {
+  position: absolute;
+  top: 22%;
+  left: 70%;
+  width: 15%; /* significantly narrowed width to force wrapping at ~3 words */
+  height: auto; /* allow height to adjust automatically */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  font-size: 0.6rem;
+  font-weight: bold;
+  color: #fff;
+  transform: translate(-48px, 100px);
+  white-space: normal;
+  line-height: 1.2rem;
+
+
+      /* Nudge the question 40px left plus an extra 8px (48px total) and move it further down by 85px on top of previous offset */
+      transform: translate(-48px, 85px);
+    }
+    /* Align the four answer texts over the lower green panels */
+    .answers-area {
+      position: absolute;
+      top: 67%;
+      left: 60%;
+      width: 36%;
+      height: 24%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4% 4%;
+      /* Nudge all answers 40px to the left and 20px down */
+      transform: translate(-40px, 20px);
+    }
+    .answers-area button {
+      width: 48%;
+      height: 45%;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Position adjustments for individual answers */
+    .answers-area button:nth-child(1) {
+      /* top-left answer: move 8px to the right */
+      transform: translate(8px, 0);
+    }
+    .answers-area button:nth-child(2) {
+      /* top-right answer: move further to the left (20px more than before) */
+      transform: translate(-50px, 0);
+    }
+    .answers-area button:nth-child(3) {
+      /* bottom-left answer: move 8px to the right and maintain the upward offset */
+      transform: translate(8px, -20px);
+    }
+    .answers-area button:nth-child(4) {
+      /* bottom-right answer: move further to the left (20px more than before) and maintain the upward offset */
+      transform: translate(-50px, -20px);
+    }
+
+    
+#stats-area {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  color: #000;
+  font-size: 0.7rem;
+  line-height: 1.1;
+  transform: translate(90px, 0); 
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px; 
+  display: none;
+
+
+
+    }
+    /* Back button to exit Pokédex viewer */
+    #back-button {
+      position: absolute;
+      /* Place the back button where the top-left answer normally appears */
+      top: 67%;
+      left: 60%;
+      width: 48%;
+      height: 45%;
+      /* Apply same translation as the top-left answer (answers-area transform -40px,20px plus answer offset 8px) */
+      transform: translate(-32px, 20px);
+      background: #cc0000;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: none;
+    }
+    /* Redesigned Pokédex grid as a horizontal slider: one row of sprites that scrolls left-to-right */
+    #pokedex-grid {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      margin: 0 auto;
+      padding: 0.5rem;
+      max-width: 1280px;
+      box-sizing: border-box;
+    }
+    .pokemon-card {
+      flex: 0 0 auto;
+      width: 100px;
+      margin-right: 0.5rem;
+      text-align: center;
+    }
+    .pokemon-card img { width: 100px; height: 100px; object-fit: contain; display: block; margin: 0 auto 0.25rem; }
+    .pokemon-card .label { font-size: 0.8rem; line-height: 1.2; color: #000; }
+  </style>
+</head>
+<body>
+  <div id="rocket-event">
+    <h2>Team&nbsp;Rocket Encounter!</h2>
+   <img src="sprites/pokemon_000.png" alt="Team Rocket"
+     style="width:75px;height:auto;transform: translate(25px, 0);" />
+
+    <p id="rocket-message"></p>
+  </div>
+  <div id="round-screen" class="pokedex-screen silhouette-bg">
+    <div class="display-area">
+      <img id="silhouette" src="" alt="Silhouette" />
+      <!-- Stats display area for Pokédex viewer -->
+      <div id="stats-area" style="display:none;"></div>
+    </div>
+    <div class="question-area" id="question-area"></div>
+    <div class="answers-area" id="answers-area"></div>
+    <!-- Back button for exiting Pokédex viewer -->
+    <button id="back-button" class="back-btn" style="display:none;">Back</button>
+  </div>
+ <h2>Your Pokédex <span id="pokedex-counter">(0 / 151)</span></h2>
+
+  <div id="pokedex-grid"></div>
+  <script id="pokedex-data" type="application/json">
+[
+  {
+    "id": 1,
+    "name": "bulbasaur",
+    "height": "0.7 m",
+    "weight": "6.9 kg",
+    "ability": "Overgrow",
+    "move": "Tackle",
+    "egg_group": "Monster, Plant"
+  },
+  {
+    "id": 2,
+    "name": "ivysaur",
+    "height": "1.0 m",
+    "weight": "13.0 kg",
+    "ability": "Overgrow",
+    "move": "Vine Whip",
+    "egg_group": "Monster, Plant"
+  },
+  {
+    "id": 3,
+    "name": "venusaur",
+    "height": "2.0 m",
+    "weight": "100.0 kg",
+    "ability": "Overgrow",
+    "move": "Ember",
+    "egg_group": "Monster, Plant"
+  },
+  {
+    "id": 4,
+    "name": "charmander",
+    "height": "0.6 m",
+    "weight": "8.5 kg",
+    "ability": "Blaze",
+    "move": "Water Gun",
+    "egg_group": "Dragon, Monster"
+  },
+  {
+    "id": 5,
+    "name": "charmeleon",
+    "height": "1.1 m",
+    "weight": "19.0 kg",
+    "ability": "Blaze",
+    "move": "Quick Attack",
+    "egg_group": "Dragon, Monster"
+  },
+  {
+    "id": 6,
+    "name": "charizard",
+    "height": "1.7 m",
+    "weight": "90.5 kg",
+    "ability": "Blaze",
+    "move": "Thunder Shock",
+    "egg_group": "Dragon, Monster"
+  },
+  {
+    "id": 7,
+    "name": "squirtle",
+    "height": "0.5 m",
+    "weight": "9.0 kg",
+    "ability": "Torrent",
+    "move": "Scratch",
+    "egg_group": "Monster, Water 1"
+  },
+  {
+    "id": 8,
+    "name": "wartortle",
+    "height": "1.0 m",
+    "weight": "22.5 kg",
+    "ability": "Torrent",
+    "move": "Body Slam",
+    "egg_group": "Monster, Water 1"
+  },
+  {
+    "id": 9,
+    "name": "blastoise",
+    "height": "1.6 m",
+    "weight": "85.5 kg",
+    "ability": "Torrent",
+    "move": "Razor Leaf",
+    "egg_group": "Monster, Water 1"
+  },
+  {
+    "id": 10,
+    "name": "caterpie",
+    "height": "0.3 m",
+    "weight": "2.9 kg",
+    "ability": "Shield Dust",
+    "move": "Flamethrower",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 11,
+    "name": "metapod",
+    "height": "0.7 m",
+    "weight": "9.9 kg",
+    "ability": "Shed Skin",
+    "move": "Bubble Beam",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 12,
+    "name": "butterfree",
+    "height": "1.1 m",
+    "weight": "32.0 kg",
+    "ability": "Compound Eyes",
+    "move": "Wing Attack",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 13,
+    "name": "weedle",
+    "height": "0.3 m",
+    "weight": "3.2 kg",
+    "ability": "Shield Dust",
+    "move": "Double Kick",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 14,
+    "name": "kakuna",
+    "height": "0.6 m",
+    "weight": "10.0 kg",
+    "ability": "Shed Skin",
+    "move": "Karate Chop",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 15,
+    "name": "beedrill",
+    "height": "1.0 m",
+    "weight": "29.5 kg",
+    "ability": "Swarm",
+    "move": "Bite",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 16,
+    "name": "pidgey",
+    "height": "0.3 m",
+    "weight": "1.8 kg",
+    "ability": "Keen Eye",
+    "move": "Poison Sting",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 17,
+    "name": "pidgeotto",
+    "height": "1.1 m",
+    "weight": "30.0 kg",
+    "ability": "Keen Eye",
+    "move": "Hyper Fang",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 18,
+    "name": "pidgeot",
+    "height": "1.5 m",
+    "weight": "39.5 kg",
+    "ability": "Keen Eye",
+    "move": "Peck",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 19,
+    "name": "rattata",
+    "height": "0.3 m",
+    "weight": "3.5 kg",
+    "ability": "Run Away",
+    "move": "Gust",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 20,
+    "name": "raticate",
+    "height": "0.7 m",
+    "weight": "18.5 kg",
+    "ability": "Run Away",
+    "move": "Ice Beam",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 21,
+    "name": "spearow",
+    "height": "0.3 m",
+    "weight": "2.0 kg",
+    "ability": "Keen Eye",
+    "move": "Hydro Pump",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 22,
+    "name": "fearow",
+    "height": "1.2 m",
+    "weight": "38.0 kg",
+    "ability": "Keen Eye",
+    "move": "Thunderbolt",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 23,
+    "name": "ekans",
+    "height": "2.0 m",
+    "weight": "6.9 kg",
+    "ability": "Intimidate",
+    "move": "Confusion",
+    "egg_group": "Dragon, Ground"
+  },
+  {
+    "id": 24,
+    "name": "arbok",
+    "height": "3.5 m",
+    "weight": "65.0 kg",
+    "ability": "Intimidate",
+    "move": "Psychic",
+    "egg_group": "Dragon, Ground"
+  },
+  {
+    "id": 25,
+    "name": "pikachu",
+    "height": "0.4 m",
+    "weight": "6.0 kg",
+    "ability": "Static",
+    "move": "Mega Punch",
+    "egg_group": "Fairy, Ground"
+  },
+  {
+    "id": 26,
+    "name": "raichu",
+    "height": "0.8 m",
+    "weight": "30.0 kg",
+    "ability": "Static",
+    "move": "Mega Kick",
+    "egg_group": "Fairy, Ground"
+  },
+  {
+    "id": 27,
+    "name": "sandshrew",
+    "height": "0.6 m",
+    "weight": "12.0 kg",
+    "ability": "Sand Veil",
+    "move": "Solar Beam",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 28,
+    "name": "sandslash",
+    "height": "1.0 m",
+    "weight": "29.5 kg",
+    "ability": "Sand Veil",
+    "move": "Rock Throw",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 29,
+    "name": "nidoran-f",
+    "height": "0.4 m",
+    "weight": "7.0 kg",
+    "ability": "Poison Point",
+    "move": "Earthquake",
+    "egg_group": "Ground, Monster"
+  },
+  {
+    "id": 30,
+    "name": "nidorina",
+    "height": "0.8 m",
+    "weight": "20.0 kg",
+    "ability": "Poison Point",
+    "move": "Surf",
+    "egg_group": "No Eggs"
+  },
+  {
+    "id": 31,
+    "name": "nidoqueen",
+    "height": "1.3 m",
+    "weight": "60.0 kg",
+    "ability": "Poison Point",
+    "move": "Swift",
+    "egg_group": "No Eggs"
+  },
+  {
+    "id": 32,
+    "name": "nidoran-m",
+    "height": "0.5 m",
+    "weight": "9.0 kg",
+    "ability": "Poison Point",
+    "move": "Fire Blast",
+    "egg_group": "Ground, Monster"
+  },
+  {
+    "id": 33,
+    "name": "nidorino",
+    "height": "0.9 m",
+    "weight": "19.5 kg",
+    "ability": "Poison Point",
+    "move": "Blizzard",
+    "egg_group": "Ground, Monster"
+  },
+  {
+    "id": 34,
+    "name": "nidoking",
+    "height": "1.4 m",
+    "weight": "62.0 kg",
+    "ability": "Poison Point",
+    "move": "Thunder",
+    "egg_group": "Ground, Monster"
+  },
+  {
+    "id": 35,
+    "name": "clefairy",
+    "height": "0.6 m",
+    "weight": "7.5 kg",
+    "ability": "Cute Charm",
+    "move": "Dragon Rage",
+    "egg_group": "Fairy"
+  },
+  {
+    "id": 36,
+    "name": "clefable",
+    "height": "1.3 m",
+    "weight": "40.0 kg",
+    "ability": "Cute Charm",
+    "move": "Shadow Ball",
+    "egg_group": "Fairy"
+  },
+  {
+    "id": 37,
+    "name": "vulpix",
+    "height": "0.6 m",
+    "weight": "9.9 kg",
+    "ability": "Flash Fire",
+    "move": "Rest",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 38,
+    "name": "ninetales",
+    "height": "1.1 m",
+    "weight": "19.9 kg",
+    "ability": "Flash Fire",
+    "move": "Dig",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 39,
+    "name": "jigglypuff",
+    "height": "0.5 m",
+    "weight": "5.5 kg",
+    "ability": "Cute Charm",
+    "move": "Horn Drill",
+    "egg_group": "Fairy"
+  },
+  {
+    "id": 40,
+    "name": "wigglytuff",
+    "height": "1.0 m",
+    "weight": "12.0 kg",
+    "ability": "Cute Charm",
+    "move": "Seismic Toss",
+    "egg_group": "Fairy"
+  },
+  {
+    "id": 41,
+    "name": "zubat",
+    "height": "0.8 m",
+    "weight": "7.5 kg",
+    "ability": "Inner Focus",
+    "move": "Hyper Beam",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 42,
+    "name": "golbat",
+    "height": "1.6 m",
+    "weight": "55.0 kg",
+    "ability": "Inner Focus",
+    "move": "Sludge",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 43,
+    "name": "oddish",
+    "height": "0.5 m",
+    "weight": "5.4 kg",
+    "ability": "Chlorophyll",
+    "move": "Leech Life",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 44,
+    "name": "gloom",
+    "height": "0.8 m",
+    "weight": "8.6 kg",
+    "ability": "Chlorophyll",
+    "move": "Spike Cannon",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 45,
+    "name": "vileplume",
+    "height": "1.2 m",
+    "weight": "18.6 kg",
+    "ability": "Chlorophyll",
+    "move": "Thunder Punch",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 46,
+    "name": "paras",
+    "height": "0.3 m",
+    "weight": "5.4 kg",
+    "ability": "Effect Spore",
+    "move": "Ice Punch",
+    "egg_group": "Bug, Plant"
+  },
+  {
+    "id": 47,
+    "name": "parasect",
+    "height": "1.0 m",
+    "weight": "29.5 kg",
+    "ability": "Effect Spore",
+    "move": "Fire Punch",
+    "egg_group": "Bug, Plant"
+  },
+  {
+    "id": 48,
+    "name": "venonat",
+    "height": "1.0 m",
+    "weight": "30.0 kg",
+    "ability": "Compound Eyes",
+    "move": "Signal Beam",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 49,
+    "name": "venomoth",
+    "height": "1.5 m",
+    "weight": "12.5 kg",
+    "ability": "Shield Dust",
+    "move": "Aurora Beam",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 50,
+    "name": "diglett",
+    "height": "0.2 m",
+    "weight": "0.8 kg",
+    "ability": "Sand Veil",
+    "move": "Lick",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 51,
+    "name": "dugtrio",
+    "height": "0.7 m",
+    "weight": "33.3 kg",
+    "ability": "Sand Veil",
+    "move": "Stomp",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 52,
+    "name": "meowth",
+    "height": "0.4 m",
+    "weight": "4.2 kg",
+    "ability": "Pickup",
+    "move": "Headbutt",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 53,
+    "name": "persian",
+    "height": "1.0 m",
+    "weight": "32.0 kg",
+    "ability": "Limber",
+    "move": "Bubble",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 54,
+    "name": "psyduck",
+    "height": "0.8 m",
+    "weight": "19.6 kg",
+    "ability": "Damp",
+    "move": "Acid",
+    "egg_group": "Ground, Water 1"
+  },
+  {
+    "id": 55,
+    "name": "golduck",
+    "height": "1.7 m",
+    "weight": "76.6 kg",
+    "ability": "Damp",
+    "move": "Waterfall",
+    "egg_group": "Ground, Water 1"
+  },
+  {
+    "id": 56,
+    "name": "mankey",
+    "height": "0.5 m",
+    "weight": "28.0 kg",
+    "ability": "Vital Spirit",
+    "move": "Psybeam",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 57,
+    "name": "primeape",
+    "height": "1.0 m",
+    "weight": "32.0 kg",
+    "ability": "Vital Spirit",
+    "move": "Flame Wheel",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 58,
+    "name": "growlithe",
+    "height": "0.7 m",
+    "weight": "19.0 kg",
+    "ability": "Intimidate",
+    "move": "Acid Armor",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 59,
+    "name": "arcanine",
+    "height": "1.9 m",
+    "weight": "155.0 kg",
+    "ability": "Intimidate",
+    "move": "Comet Punch",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 60,
+    "name": "poliwag",
+    "height": "0.6 m",
+    "weight": "12.4 kg",
+    "ability": "Water Absorb",
+    "move": "Psych Up",
+    "egg_group": "Water 1"
+  },
+  {
+    "id": 61,
+    "name": "poliwhirl",
+    "height": "1.0 m",
+    "weight": "20.0 kg",
+    "ability": "Water Absorb",
+    "move": "Crunch",
+    "egg_group": "Water 1"
+  },
+  {
+    "id": 62,
+    "name": "poliwrath",
+    "height": "1.3 m",
+    "weight": "54.0 kg",
+    "ability": "Water Absorb",
+    "move": "Agility",
+    "egg_group": "Water 1"
+  },
+  {
+    "id": 63,
+    "name": "abra",
+    "height": "0.9 m",
+    "weight": "19.5 kg",
+    "ability": "Synchronize",
+    "move": "Barrier",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 64,
+    "name": "kadabra",
+    "height": "1.3 m",
+    "weight": "56.5 kg",
+    "ability": "Synchronize",
+    "move": "Sharpen",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 65,
+    "name": "alakazam",
+    "height": "1.5 m",
+    "weight": "48.0 kg",
+    "ability": "Synchronize",
+    "move": "Rolling Kick",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 66,
+    "name": "machop",
+    "height": "0.8 m",
+    "weight": "19.5 kg",
+    "ability": "Guts",
+    "move": "Super Fang",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 67,
+    "name": "machoke",
+    "height": "1.5 m",
+    "weight": "70.5 kg",
+    "ability": "Guts",
+    "move": "Petal Dance",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 68,
+    "name": "machamp",
+    "height": "1.6 m",
+    "weight": "130.0 kg",
+    "ability": "Guts",
+    "move": "Substitute",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 69,
+    "name": "bellsprout",
+    "height": "0.7 m",
+    "weight": "4.0 kg",
+    "ability": "Chlorophyll",
+    "move": "Barrage",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 70,
+    "name": "weepinbell",
+    "height": "1.0 m",
+    "weight": "6.4 kg",
+    "ability": "Chlorophyll",
+    "move": "Sing",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 71,
+    "name": "victreebel",
+    "height": "1.7 m",
+    "weight": "15.5 kg",
+    "ability": "Chlorophyll",
+    "move": "Smokescreen",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 72,
+    "name": "tentacool",
+    "height": "0.9 m",
+    "weight": "45.5 kg",
+    "ability": "Clear Body",
+    "move": "Withdraw",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 73,
+    "name": "tentacruel",
+    "height": "1.6 m",
+    "weight": "55.0 kg",
+    "ability": "Clear Body",
+    "move": "Wing Attack",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 74,
+    "name": "geodude",
+    "height": "0.4 m",
+    "weight": "20.0 kg",
+    "ability": "Rock Head",
+    "move": "Drill Peck",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 75,
+    "name": "graveler",
+    "height": "1.0 m",
+    "weight": "105.0 kg",
+    "ability": "Rock Head",
+    "move": "Lovely Kiss",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 76,
+    "name": "golem",
+    "height": "1.4 m",
+    "weight": "300.0 kg",
+    "ability": "Rock Head",
+    "move": "Transform",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 77,
+    "name": "ponyta",
+    "height": "1.0 m",
+    "weight": "30.0 kg",
+    "ability": "Run Away",
+    "move": "Self-Destruct",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 78,
+    "name": "rapidash",
+    "height": "1.7 m",
+    "weight": "95.0 kg",
+    "ability": "Run Away",
+    "move": "Explosion",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 79,
+    "name": "slowpoke",
+    "height": "1.2 m",
+    "weight": "36.0 kg",
+    "ability": "Oblivious",
+    "move": "Mega Drain",
+    "egg_group": "Monster, Water 1"
+  },
+  {
+    "id": 80,
+    "name": "slowbro",
+    "height": "1.6 m",
+    "weight": "78.5 kg",
+    "ability": "Oblivious",
+    "move": "Swords Dance",
+    "egg_group": "Monster, Water 1"
+  },
+  {
+    "id": 81,
+    "name": "magnemite",
+    "height": "0.3 m",
+    "weight": "6.0 kg",
+    "ability": "Magnet Pull",
+    "move": "Counter",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 82,
+    "name": "magneton",
+    "height": "1.0 m",
+    "weight": "60.0 kg",
+    "ability": "Magnet Pull",
+    "move": "Flash",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 83,
+    "name": "farfetchd",
+    "height": "0.8 m",
+    "weight": "15.0 kg",
+    "ability": "Keen Eye",
+    "move": "Teleport",
+    "egg_group": "Flying, Ground"
+  },
+  {
+    "id": 84,
+    "name": "doduo",
+    "height": "1.4 m",
+    "weight": "39.2 kg",
+    "ability": "Run Away",
+    "move": "Sonic Boom",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 85,
+    "name": "dodrio",
+    "height": "1.8 m",
+    "weight": "85.2 kg",
+    "ability": "Run Away",
+    "move": "Low Kick",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 86,
+    "name": "seel",
+    "height": "1.1 m",
+    "weight": "90.0 kg",
+    "ability": "Thick Fat",
+    "move": "Double Edge",
+    "egg_group": "Ground, Water 1"
+  },
+  {
+    "id": 87,
+    "name": "dewgong",
+    "height": "1.7 m",
+    "weight": "120.0 kg",
+    "ability": "Thick Fat",
+    "move": "Reflect",
+    "egg_group": "Ground, Water 1"
+  },
+  {
+    "id": 88,
+    "name": "grimer",
+    "height": "0.9 m",
+    "weight": "30.0 kg",
+    "ability": "Stench",
+    "move": "Light Screen",
+    "egg_group": "Amorphous"
+  },
+  {
+    "id": 89,
+    "name": "muk",
+    "height": "1.2 m",
+    "weight": "30.0 kg",
+    "ability": "Stench",
+    "move": "Ember",
+    "egg_group": "Amorphous"
+  },
+  {
+    "id": 90,
+    "name": "shellder",
+    "height": "0.3 m",
+    "weight": "4.0 kg",
+    "ability": "Shell Armor",
+    "move": "Water Gun",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 91,
+    "name": "cloyster",
+    "height": "1.5 m",
+    "weight": "132.5 kg",
+    "ability": "Shell Armor",
+    "move": "Thunder Shock",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 92,
+    "name": "gastly",
+    "height": "1.3 m",
+    "weight": "0.1 kg",
+    "ability": "Levitate",
+    "move": "Ice Beam",
+    "egg_group": "Amorphous"
+  },
+  {
+    "id": 93,
+    "name": "haunter",
+    "height": "1.6 m",
+    "weight": "0.1 kg",
+    "ability": "Levitate",
+    "move": "Aerial Ace",
+    "egg_group": "Amorphous"
+  },
+  {
+    "id": 94,
+    "name": "gengar",
+    "height": "1.5 m",
+    "weight": "40.5 kg",
+    "ability": "Cursed Body",
+    "move": "Flame Thrower",
+    "egg_group": "Amorphous"
+  },
+  {
+    "id": 95,
+    "name": "onix",
+    "height": "8.8 m",
+    "weight": "210.0 kg",
+    "ability": "Rock Head",
+    "move": "Smog",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 96,
+    "name": "drowzee",
+    "height": "1.0 m",
+    "weight": "32.4 kg",
+    "ability": "Insomnia",
+    "move": "Spore",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 97,
+    "name": "hypno",
+    "height": "1.6 m",
+    "weight": "75.6 kg",
+    "ability": "Insomnia",
+    "move": "Night Shade",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 98,
+    "name": "krabby",
+    "height": "0.4 m",
+    "weight": "6.5 kg",
+    "ability": "Hyper Cutter",
+    "move": "Morning Sun",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 99,
+    "name": "kingler",
+    "height": "1.3 m",
+    "weight": "60.0 kg",
+    "ability": "Hyper Cutter",
+    "move": "Psychic",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 100,
+    "name": "voltorb",
+    "height": "0.5 m",
+    "weight": "10.4 kg",
+    "ability": "Soundproof",
+    "move": "Fire Spin",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 101,
+    "name": "electrode",
+    "height": "1.2 m",
+    "weight": "66.6 kg",
+    "ability": "Soundproof",
+    "move": "Hydro Pump",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 102,
+    "name": "exeggcute",
+    "height": "0.4 m",
+    "weight": "2.5 kg",
+    "ability": "Chlorophyll",
+    "move": "Tackle",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 103,
+    "name": "exeggutor",
+    "height": "2.0 m",
+    "weight": "120.0 kg",
+    "ability": "Chlorophyll",
+    "move": "Vine Whip",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 104,
+    "name": "cubone",
+    "height": "0.4 m",
+    "weight": "6.5 kg",
+    "ability": "Rock Head",
+    "move": "Ember",
+    "egg_group": "Monster"
+  },
+  {
+    "id": 105,
+    "name": "marowak",
+    "height": "1.0 m",
+    "weight": "45.0 kg",
+    "ability": "Rock Head",
+    "move": "Water Gun",
+    "egg_group": "Monster"
+  },
+  {
+    "id": 106,
+    "name": "hitmonlee",
+    "height": "1.5 m",
+    "weight": "49.8 kg",
+    "ability": "Limber",
+    "move": "Quick Attack",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 107,
+    "name": "hitmonchan",
+    "height": "1.4 m",
+    "weight": "50.2 kg",
+    "ability": "Keen Eye",
+    "move": "Thunder Shock",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 108,
+    "name": "lickitung",
+    "height": "1.2 m",
+    "weight": "65.5 kg",
+    "ability": "Own Tempo",
+    "move": "Scratch",
+    "egg_group": "Monster"
+  },
+  {
+    "id": 109,
+    "name": "koffing",
+    "height": "0.6 m",
+    "weight": "1.0 kg",
+    "ability": "Levitate",
+    "move": "Body Slam",
+    "egg_group": "Amorphous"
+  },
+  {
+    "id": 110,
+    "name": "weezing",
+    "height": "1.2 m",
+    "weight": "9.5 kg",
+    "ability": "Levitate",
+    "move": "Razor Leaf",
+    "egg_group": "Amorphous"
+  },
+  {
+    "id": 111,
+    "name": "rhyhorn",
+    "height": "1.0 m",
+    "weight": "115.0 kg",
+    "ability": "Lightning Rod",
+    "move": "Flamethrower",
+    "egg_group": "Ground, Monster"
+  },
+  {
+    "id": 112,
+    "name": "rhydon",
+    "height": "1.9 m",
+    "weight": "120.0 kg",
+    "ability": "Lightning Rod",
+    "move": "Bubble Beam",
+    "egg_group": "Ground, Monster"
+  },
+  {
+    "id": 113,
+    "name": "chansey",
+    "height": "1.1 m",
+    "weight": "34.6 kg",
+    "ability": "Natural Cure",
+    "move": "Wing Attack",
+    "egg_group": "Fairy"
+  },
+  {
+    "id": 114,
+    "name": "tangela",
+    "height": "1.0 m",
+    "weight": "35.0 kg",
+    "ability": "Chlorophyll",
+    "move": "Double Kick",
+    "egg_group": "Plant"
+  },
+  {
+    "id": 115,
+    "name": "kangaskhan",
+    "height": "2.2 m",
+    "weight": "80.0 kg",
+    "ability": "Early Bird",
+    "move": "Karate Chop",
+    "egg_group": "Monster"
+  },
+  {
+    "id": 116,
+    "name": "horsea",
+    "height": "0.4 m",
+    "weight": "8.0 kg",
+    "ability": "Swift Swim",
+    "move": "Bite",
+    "egg_group": "Dragon, Water 1"
+  },
+  {
+    "id": 117,
+    "name": "seadra",
+    "height": "1.2 m",
+    "weight": "25.0 kg",
+    "ability": "Poison Point",
+    "move": "Poison Sting",
+    "egg_group": "Dragon, Water 1"
+  },
+  {
+    "id": 118,
+    "name": "goldeen",
+    "height": "0.6 m",
+    "weight": "15.0 kg",
+    "ability": "Swift Swim",
+    "move": "Hyper Fang",
+    "egg_group": "Water 2"
+  },
+  {
+    "id": 119,
+    "name": "seaking",
+    "height": "1.3 m",
+    "weight": "39.0 kg",
+    "ability": "Swift Swim",
+    "move": "Peck",
+    "egg_group": "Water 2"
+  },
+  {
+    "id": 120,
+    "name": "staryu",
+    "height": "0.8 m",
+    "weight": "34.5 kg",
+    "ability": "Illuminate",
+    "move": "Gust",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 121,
+    "name": "starmie",
+    "height": "1.1 m",
+    "weight": "80.0 kg",
+    "ability": "Illuminate",
+    "move": "Ice Beam",
+    "egg_group": "Water 3"
+  },
+  {
+    "id": 122,
+    "name": "mr-mime",
+    "height": "1.3 m",
+    "weight": "54.5 kg",
+    "ability": "Soundproof",
+    "move": "Hydro Pump",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 123,
+    "name": "scyther",
+    "height": "1.5 m",
+    "weight": "56.0 kg",
+    "ability": "Swarm",
+    "move": "Thunderbolt",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 124,
+    "name": "jynx",
+    "height": "1.4 m",
+    "weight": "40.6 kg",
+    "ability": "Oblivious",
+    "move": "Confusion",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 125,
+    "name": "electabuzz",
+    "height": "1.1 m",
+    "weight": "30.0 kg",
+    "ability": "Static",
+    "move": "Psychic",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 126,
+    "name": "magmar",
+    "height": "1.3 m",
+    "weight": "44.5 kg",
+    "ability": "Flame Body",
+    "move": "Mega Punch",
+    "egg_group": "Human-Like"
+  },
+  {
+    "id": 127,
+    "name": "pinsir",
+    "height": "1.5 m",
+    "weight": "55.0 kg",
+    "ability": "Hyper Cutter",
+    "move": "Mega Kick",
+    "egg_group": "Bug"
+  },
+  {
+    "id": 128,
+    "name": "tauros",
+    "height": "1.4 m",
+    "weight": "88.4 kg",
+    "ability": "Intimidate",
+    "move": "Solar Beam",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 129,
+    "name": "magikarp",
+    "height": "0.9 m",
+    "weight": "10.0 kg",
+    "ability": "Swift Swim",
+    "move": "Rock Throw",
+    "egg_group": "Dragon, Water 2"
+  },
+  {
+    "id": 130,
+    "name": "gyarados",
+    "height": "6.5 m",
+    "weight": "235.0 kg",
+    "ability": "Intimidate",
+    "move": "Earthquake",
+    "egg_group": "Dragon, Water 2"
+  },
+  {
+    "id": 131,
+    "name": "lapras",
+    "height": "2.5 m",
+    "weight": "220.0 kg",
+    "ability": "Water Absorb",
+    "move": "Surf",
+    "egg_group": "Monster, Water 1"
+  },
+  {
+    "id": 132,
+    "name": "ditto",
+    "height": "0.3 m",
+    "weight": "4.0 kg",
+    "ability": "Limber",
+    "move": "Swift",
+    "egg_group": "Ditto"
+  },
+  {
+    "id": 133,
+    "name": "eevee",
+    "height": "0.3 m",
+    "weight": "6.5 kg",
+    "ability": "Run Away",
+    "move": "Fire Blast",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 134,
+    "name": "vaporeon",
+    "height": "1.0 m",
+    "weight": "29.0 kg",
+    "ability": "Water Absorb",
+    "move": "Blizzard",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 135,
+    "name": "jolteon",
+    "height": "0.8 m",
+    "weight": "24.5 kg",
+    "ability": "Volt Absorb",
+    "move": "Thunder",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 136,
+    "name": "flareon",
+    "height": "0.9 m",
+    "weight": "25.0 kg",
+    "ability": "Flash Fire",
+    "move": "Dragon Rage",
+    "egg_group": "Ground"
+  },
+  {
+    "id": 137,
+    "name": "porygon",
+    "height": "0.8 m",
+    "weight": "36.5 kg",
+    "ability": "Trace",
+    "move": "Shadow Ball",
+    "egg_group": "Mineral"
+  },
+  {
+    "id": 138,
+    "name": "omanyte",
+    "height": "0.4 m",
+    "weight": "7.5 kg",
+    "ability": "Swift Swim",
+    "move": "Rest",
+    "egg_group": "Water 1, Water 3"
+  },
+  {
+    "id": 139,
+    "name": "omastar",
+    "height": "1.0 m",
+    "weight": "35.0 kg",
+    "ability": "Swift Swim",
+    "move": "Dig",
+    "egg_group": "Water 1, Water 3"
+  },
+  {
+    "id": 140,
+    "name": "kabuto",
+    "height": "0.5 m",
+    "weight": "11.5 kg",
+    "ability": "Swift Swim",
+    "move": "Horn Drill",
+    "egg_group": "Water 1, Water 3"
+  },
+  {
+    "id": 141,
+    "name": "kabutops",
+    "height": "1.3 m",
+    "weight": "40.5 kg",
+    "ability": "Swift Swim",
+    "move": "Seismic Toss",
+    "egg_group": "Water 1, Water 3"
+  },
+  {
+    "id": 142,
+    "name": "aerodactyl",
+    "height": "1.8 m",
+    "weight": "59.0 kg",
+    "ability": "Rock Head",
+    "move": "Hyper Beam",
+    "egg_group": "Flying"
+  },
+  {
+    "id": 143,
+    "name": "snorlax",
+    "height": "2.1 m",
+    "weight": "460.0 kg",
+    "ability": "Immunity",
+    "move": "Sludge",
+    "egg_group": "Monster"
+  },
+  {
+    "id": 144,
+    "name": "articuno",
+    "height": "1.7 m",
+    "weight": "55.4 kg",
+    "ability": "Pressure",
+    "move": "Leech Life",
+    "egg_group": "No Eggs"
+  },
+  {
+    "id": 145,
+    "name": "zapdos",
+    "height": "1.6 m",
+    "weight": "52.6 kg",
+    "ability": "Pressure",
+    "move": "Spike Cannon",
+    "egg_group": "No Eggs"
+  },
+  {
+    "id": 146,
+    "name": "moltres",
+    "height": "2.0 m",
+    "weight": "60.0 kg",
+    "ability": "Pressure",
+    "move": "Thunder Punch",
+    "egg_group": "No Eggs"
+  },
+  {
+    "id": 147,
+    "name": "dratini",
+    "height": "1.8 m",
+    "weight": "3.3 kg",
+    "ability": "Shed Skin",
+    "move": "Ice Punch",
+    "egg_group": "Dragon, Water 1"
+  },
+  {
+    "id": 148,
+    "name": "dragonair",
+    "height": "4.0 m",
+    "weight": "16.5 kg",
+    "ability": "Shed Skin",
+    "move": "Fire Punch",
+    "egg_group": "Dragon, Water 1"
+  },
+  {
+    "id": 149,
+    "name": "dragonite",
+    "height": "2.2 m",
+    "weight": "210.0 kg",
+    "ability": "Inner Focus",
+    "move": "Signal Beam",
+    "egg_group": "Dragon, Water 1"
+  },
+  {
+    "id": 150,
+    "name": "mewtwo",
+    "height": "2.0 m",
+    "weight": "122.0 kg",
+    "ability": "Pressure",
+    "move": "Aurora Beam",
+    "egg_group": "No Eggs"
+  },
+  {
+    "id": 151,
+    "name": "mew",
+    "height": "0.4 m",
+    "weight": "4.0 kg",
+    "ability": "Synchronize",
+    "move": "Lick",
+    "egg_group": "No Eggs"
+  }
+]
+  </script>
+  <script>
+    const pokemonData = JSON.parse(document.getElementById("pokedex-data").textContent.trim());
+    function padId(num) { return String(num).padStart(3, "0"); }
+    function getSpritePath(id, shiny=false) { const padded = padId(id); return shiny ? `sprites/pokemon_${padded}_shiny.png` : `sprites/pokemon_${padded}.png`; }
+    function getSilhouettePath(id) { return `sprites/pokemon_${padId(id)}_silhouette.png`; }
+    let unlocked = JSON.parse(localStorage.getItem("unlockedPokemon")) || {};
+    let currentPokemon = null; let bonusQuestions = []; let bonusIndex = 0;
+let lastRocket = false; // Track if the last round was a Team Rocket encounter
+
+    // Track whether the current bonus round should produce a shiny unlock
+    let currentIsShinyRound = false;
+    function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+    function startRound() {
+      document.getElementById("rocket-event").style.display = "none";
+      document.getElementById("round-screen").style.display = "block";
+      document.getElementById("round-screen").classList.remove("quiz-bg");
+      document.getElementById("round-screen").classList.add("silhouette-bg");
+      // Ensure stats area and back button are hidden when starting a new round
+      document.getElementById("stats-area").style.display = "none";
+      document.getElementById("back-button").style.display = "none";
+      // Reset question area styling
+      const qAreaReset = document.getElementById("question-area");
+      qAreaReset.style.fontSize = "1.4rem";
+      qAreaReset.style.lineHeight = "normal";
+      qAreaReset.style.whiteSpace = "normal";
+      qAreaReset.style.color = "#fff";
+      // Make sure answers area is visible
+      document.getElementById("answers-area").style.display = "flex";
+     
+// 10% chance to encounter Team Rocket, but not twice in a row
+if (!lastRocket && Math.random() < 0.10) {
+  lastRocket = true;
+  handleTeamRocket();
+  return;
+} else {
+  lastRocket = false;
+
+
+
+
+
+      }
+      const lockedList = pokemonData.filter(p => !(p.id in unlocked));
+      currentPokemon = lockedList[Math.floor(Math.random() * lockedList.length)];
+      const silEl = document.getElementById("silhouette");
+      // Reset silhouette to shadow and remove pixelation when a new round begins
+      silEl.src = getSilhouettePath(currentPokemon.id);
+      silEl.style.imageRendering = "auto";
+      document.getElementById("question-area").textContent = "Who's that Pokémon?";
+      const otherNames = shuffle(pokemonData.filter(p => p.id !== currentPokemon.id)).slice(0,3).map(p => p.name);
+      const options = shuffle([currentPokemon.name, ...otherNames]);
+      const answersDiv = document.getElementById("answers-area"); answersDiv.innerHTML = "";
+      options.forEach(name => { const btn = document.createElement("button"); btn.textContent = name; btn.onclick = () => handleGuess(name); answersDiv.appendChild(btn); });
+    }
+    function handleGuess(name) {
+      if (name === currentPokemon.name) { document.getElementById("question-area").textContent = "Correct! Bonus Round."; startBonusRound(); }
+      else { document.getElementById("question-area").textContent = "Wrong! New silhouette coming..."; setTimeout(startRound, 1200); }
+    }
+   
+
+
+function handleTeamRocket() {
+  // Play Team Rocket intro sound
+  document.getElementById("sound-rocket").play();
+
+  const unlockedCount = Object.keys(unlocked).length;
+  if (unlockedCount < 5) {
+    startRound();
+    return;
+  }
+
+  const silEl = document.getElementById("silhouette");
+  silEl.src = "sprites/pokemon_000.png";
+  silEl.style.imageRendering = "pixelated";
+
+  // Adjust Team Rocket sprite:
+  // 40% of normal size, moved left 20px and down 130px
+  silEl.style.width = "40%";
+  silEl.style.height = "auto";
+  silEl.style.transform = "translate(-20px, 130px)";
+
+  document.getElementById("answers-area").style.display = "none";
+
+  const qArea = document.getElementById("question-area");
+  const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
+  let message;
+
+  if (Math.random() < 0.75 && normalKeys.length > 0) {
+    const stealId = parseInt(normalKeys[Math.floor(Math.random() * normalKeys.length)], 10);
+    const stolenName = pokemonData.find(p => p.id === stealId).name;
+    delete unlocked[stealId];
+    localStorage.setItem("unlockedPokemon", JSON.stringify(unlocked));
+    updatePokedexUI();
+    message = `Team Rocket stole your ${stolenName}!`;
+  } else {
+    message = "Team Rocket tried to steal a Pokémon, but failed!";
+  }
+
+  qArea.textContent = message;
+
+  setTimeout(() => {
+    // Reset silhouette styles back to default for the next round
+    silEl.style.width = "";
+    silEl.style.height = "";
+    silEl.style.transform = "";
+
+    qArea.style.fontSize = "1.2rem";
+    qArea.style.lineHeight = "normal";
+    qArea.style.whiteSpace = "normal";
+    qArea.style.color = "#fff";
+    document.getElementById("answers-area").style.display = "flex";
+    startRound();
+  }, 4000);
+}
+
+
+
+
+
+
+    
+    function startBonusRound() {
+      const screen = document.getElementById("round-screen"); screen.classList.remove("silhouette-bg"); screen.classList.add("quiz-bg");
+      const stats = ["height","weight","ability","id","egg_group"];
+      // Determine shiny chance for this round (10%) and update the sprite accordingly
+      currentIsShinyRound = Math.random() < 0.10;
+      const silEl = document.getElementById("silhouette");
+      silEl.src = getSpritePath(currentPokemon.id, currentIsShinyRound);
+      // Apply pixelated rendering for the colored sprite
+      silEl.style.imageRendering = "pixelated";
+      bonusQuestions = shuffle(stats).slice(0,3);
+      bonusIndex = 0;
+      askNextBonusQuestion();
+    }
+   
+
+function askNextBonusQuestion() {
+  if (bonusIndex >= bonusQuestions.length) { unlockPokemon(); return; }
+
+  const stat = bonusQuestions[bonusIndex];
+  let questionText = "", correctAnswer = "", pool = [];
+
+  if (stat === "height") {
+    questionText = `What is ${currentPokemon.name}'s height?`;
+    correctAnswer = currentPokemon.height;
+    pool = pokemonData.map(p => p.height);
+  } else if (stat === "weight") {
+    questionText = `What is ${currentPokemon.name}'s weight?`;
+    correctAnswer = currentPokemon.weight;
+    pool = pokemonData.map(p => p.weight);
+  } else if (stat === "ability") {
+    questionText = `What is ${currentPokemon.name}'s ability?`;
+    correctAnswer = currentPokemon.ability;
+    pool = pokemonData.map(p => p.ability);
+  } else if (stat === "id") {
+    questionText = `What is ${currentPokemon.name}'s Pokédex number?`;
+    correctAnswer = String(currentPokemon.id);
+    pool = pokemonData.map(p => String(p.id));
+  } else if (stat === "egg_group") {
+    questionText = `What is ${currentPokemon.name}'s egg group?`;
+    correctAnswer = currentPokemon.egg_group;
+    pool = pokemonData.map(p => p.egg_group);
+  } else if (stat === "move") {
+    questionText = `Which move can ${currentPokemon.name} learn?`;
+    correctAnswer = currentPokemon.move;
+    pool = pokemonData
+      .map(p => p.move)
+      .filter(move => move !== correctAnswer);
+  }
+
+  // Ensure pool is unique to prevent duplicate wrong answers
+  pool = Array.from(new Set(pool));
+
+  // Format question text into at most 3-word lines
+  let formatted = questionText;
+  const parts = questionText.split(/\s+/);
+  if (parts.length > 3) {
+    const segments = [];
+    for (let i = 0; i < parts.length; i += 3) {
+      segments.push(parts.slice(i, i + 3).join(' '));
+    }
+    formatted = segments.join('<br>');
+  }
+  document.getElementById("question-area").innerHTML = formatted;
+
+  // Generate three guaranteed unique wrong answers
+  const wrongs = shuffle(pool).slice(0, 3);
+
+  // Combine correct answer and wrong answers, ensuring uniqueness
+  const answers = shuffle([correctAnswer, ...wrongs]);
+
+  // Render answers on UI
+  const answersDiv = document.getElementById("answers-area");
+  answersDiv.innerHTML = "";
+  answers.forEach(ans => {
+    const btn = document.createElement("button");
+    btn.textContent = ans;
+    btn.onclick = () => handleBonusAnswer(ans, correctAnswer);
+    answersDiv.appendChild(btn);
+
+
+
+
+
+
+
+
+      });
+    }
+
+
+function handleBonusAnswer(selected, correctAnswer) {
+  if (selected === correctAnswer) {
+    bonusIndex++;
+    askNextBonusQuestion();
+  } else {
+    // Wrong answer: fail the bonus round and return to main game
+    document.getElementById("question-area").textContent = "Wrong! Better luck next time!";
+    setTimeout(startRound, 1500);
+  }
+
+
+
+    }
+function unlockPokemon() {
+  // Play correct answer sound when a Pokémon is collected
+  document.getElementById("sound-correct").play();
+
+  // Use the predetermined shiny flag for this round
+  const isShiny = currentIsShinyRound;
+  unlocked[currentPokemon.id] = isShiny ? "shiny" : "normal";
+  localStorage.setItem("unlockedPokemon", JSON.stringify(unlocked));
+  updatePokedexUI();
+
+  document.getElementById("question-area").textContent =
+    `Congratulations! You unlocked ${isShiny ? "a shiny" : "a"} ${currentPokemon.name}!`;
+
+  setTimeout(startRound, 1500);
+}
+
+
+
+function updatePokedexUI() {
+  const grid = document.getElementById("pokedex-grid");
+  grid.innerHTML = "";
+
+  // Update Pokédex counter
+  const unlockedCount = Object.keys(unlocked).length;
+  document.getElementById("pokedex-counter").textContent = `(${unlockedCount} / 151)`;
+
+  pokemonData.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "pokemon-card";
+    const img = document.createElement("img");
+    const label = document.createElement("div");
+    label.className = "label";
+    if (unlocked[p.id]) {
+      const shiny = unlocked[p.id] === "shiny";
+      img.src = getSpritePath(p.id, shiny);
+      label.textContent = shiny ? `${p.name} (Shiny)` : p.name;
+    } else {
+      img.src = getSilhouettePath(p.id);
+      label.textContent = "???";
+    }
+    card.appendChild(img);
+    card.appendChild(label);
+    if (unlocked[p.id]) {
+      card.style.cursor = "pointer";
+      card.onclick = () => showPokedexEntry(p);
+    }
+    grid.appendChild(card);
+
+
+      });
+    }
+    // Display a Pokédex entry when a card is clicked
+    function showPokedexEntry(p) {
+      const roundScreen = document.getElementById("round-screen");
+      // Use the quiz background for the entry view
+      roundScreen.classList.remove("silhouette-bg");
+      roundScreen.classList.add("quiz-bg");
+      // Show the Pokémon sprite (respect shiny status)
+      const silEl = document.getElementById("silhouette");
+      const shiny = unlocked[p.id] === "shiny";
+      silEl.src = getSpritePath(p.id, shiny);
+      silEl.style.imageRendering = "pixelated";
+      // Populate the question area with the Pokémon name and a Back link below it.
+      const qArea = document.getElementById("question-area");
+      qArea.innerHTML = `<strong>${p.name.toUpperCase()}</strong><br><br>` +
+        `<span id="back-link" style="background:#cc0000;color:#fff;padding:0.2rem 0.4rem;border-radius:4px;cursor:pointer;margin-left:1rem;">Back</span>`;
+      qArea.style.fontSize = "1.4rem";
+      qArea.style.lineHeight = "1.4";
+      qArea.style.whiteSpace = "normal";
+      // Attach click handler to the new back link
+      setTimeout(() => {
+        const backLinkEl = document.getElementById('back-link');
+        if (backLinkEl) backLinkEl.onclick = () => exitPokedexView();
+      }, 0);
+      // Populate stats in the stats-area under the sprite with bold labels
+      const statsArea = document.getElementById("stats-area");
+      statsArea.innerHTML =
+        `<strong>Height:</strong> ${p.height}<br>` +
+        `<strong>Weight:</strong> ${p.weight}<br>` +
+        `<strong>Ability:</strong> ${p.ability}<br>` +
+        `<strong>Egg group:</strong> ${p.egg_group}<br>` +
+        `<strong>Pokédex #:</strong> ${p.id}`;
+      statsArea.style.display = "block";
+      // Hide answer buttons when viewing a Pokédex entry
+      document.getElementById("answers-area").style.display = "none";
+      // Hide the original back button (not used when back link is inside question area)
+      const backBtn = document.getElementById("back-button");
+      backBtn.style.display = "none";
+    }
+
+    // Exit from the Pokédex entry view back to the game
+    function exitPokedexView() {
+      // Hide stats and back button
+      document.getElementById("stats-area").style.display = "none";
+      document.getElementById("back-button").style.display = "none";
+      // Reset the question area styling
+      const qArea = document.getElementById("question-area");
+      qArea.style.fontSize = "1.4rem";
+      qArea.style.lineHeight = "normal";
+      qArea.style.whiteSpace = "normal";
+      qArea.style.color = "#fff";
+      // Start a new round
+      startRound();
+    }
+
+    updatePokedexUI(); startRound();
+  </script>
+
+<!-- Sound effects -->
+<audio id="sound-correct" src="sounds/correct_answer.mp3" preload="auto"></audio>
+<audio id="sound-rocket" src="sounds/rocket_intro.mp3" preload="auto"></audio>
+
+</body>
+</html>
