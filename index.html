@@ -2,18 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Who's That Pokémon? - Enhanced Edition</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Who's That Pokémon? - Mobile Edition</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body { 
   margin: 0; 
   padding: 0; 
   font-family: 'Arial', sans-serif; 
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #87CEEB 0%, #4682B4 100%);
   color: #000; 
-  text-align: center; 
   min-height: 100vh;
   overflow-x: hidden;
+  user-select: none;
 }
 
 /* Loading screen */
@@ -64,22 +69,26 @@ body {
 #game-header {
   background: rgba(0,0,0,0.8);
   color: white;
-  padding: 0.4rem;
+  padding: 0.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.3rem;
   background: rgba(255,255,255,0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 15px;
   backdrop-filter: blur(10px);
+  font-size: 0.8rem;
 }
 
 .streak-counter {
@@ -88,194 +97,276 @@ body {
   font-weight: bold;
 }
 
-#rocket-event { 
-  display: none; 
+/* Main game container */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 60px);
+  padding: 1rem;
+  gap: 1rem;
 }
 
-.pokedex-screen {
-  position: relative;
-  width: min(1280px, 95vw);
-  padding-top: 40px;
-  height: 70vh;
-  margin: 1rem auto;
-  border: none;
-  outline: none;
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
+/* Pokedex Device */
+.pokedex-device {
+  background: linear-gradient(145deg, #dc143c, #b22222);
   border-radius: 20px;
-  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-  transition: all 0.3s ease;
-}
-
-.silhouette-bg { background-image: url('pokedex_bg_silhouette.png'); }
-.quiz-bg { background-image: url('pokedex_bg_blue.png'); }
-
-.display-area { 
-  position: absolute; 
-  top: 22%; 
-  left: 17%; 
-  width: 40%; 
-  height: 60%; 
-  transition: all 0.3s ease;
-}
-
-.display-area img {
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  border: 3px solid #8b0000;
+  position: relative;
+  max-width: 400px;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transform: translate(20px, 55px) scale(0.75);
-  transform-origin: top left;
-  transition: all 0.3s ease;
-  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+  margin: 0 auto;
+  flex-shrink: 0;
+  min-height: 450px;
 }
 
-.question-area {
+.pokedex-device::before {
+  content: '';
   position: absolute;
-  top: 22%;
-  left: 70%;
-  width: 15%;
-  height: auto;
+  top: 1rem;
+  left: 1rem;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #00ffff 30%, #0080ff  70%);
+  border-radius: 50%;
+  border: 4px solid white;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+}
+
+.pokedex-lights {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.light {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid #333;
+}
+
+.light.red { background: #ff0000; }
+.light.yellow { background: #ffff00; }
+.light.green { background: #00ff00; }
+
+.screen-container {
+  background: #f0f0f0;
+  border-radius: 15px;
+  padding: 1.5rem;
+  margin-top: 4rem;
+  border: 3px solid #333;
+  position: relative;
+  min-height: 320px;
+}
+
+
+
+.pokemon-display {
+  background: radial-gradient(circle, #ffffff 20%, #87ceeb 80%);
+  border-radius: 10px;
+  padding: 1rem; /* Reduced padding to give image more space */
+  text-align: center;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.pokemon-display.energy-burst {
+  background: radial-gradient(circle, #ffffff 10%, #ffff00 30%, #ff6600 60%, #ff0000 100%);
+  animation: energyPulse 2s ease-in-out;
+}
+
+@keyframes energyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.pokemon-image {
+  width: 100%; /* Fills the container's width */
+  height: 100%; /* Fills the container's height */
+  object-fit: contain;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+  transition: all 0.3s ease;
+}
+
+.pokemon-image.shiny {
+  filter: drop-shadow(0 0 15px gold) drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+  animation: shinyGlow 2s infinite;
+}
+
+@keyframes shinyGlow {
+  0%, 100% { filter: drop-shadow(0 0 15px gold) drop-shadow(2px 2px 4px rgba(0,0,0,0.3)); }
+  50% { filter: drop-shadow(0 0 25px gold) drop-shadow(2px 2px 4px rgba(0,0,0,0.3)); }
+}
+
+.screen-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+
+.red-button {
+  width: 20px;
+  height: 20px;
+  background: #ff0000;
+  border-radius: 50%;
+  border: 2px solid #333;
+}
+
+.speaker-grille {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.speaker-line {
+  width: 30px;
+  height: 2px;
+  background: #333;
+}
+
+/* Question and answers area */
+.question-answers-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 300px;
+}
+
+.question-text {
+  background: rgba(255,255,255,0.9);
+  padding: 1rem;
+  border-radius: 15px;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.answers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Changed to a 2x2 grid */
+  gap: 0.8rem;
+  flex: 1;
+}
+
+.answer-button {
+  background: linear-gradient(145deg, #4ecdc4, #44a08d);
+  color: white;
+  border: none;
+  border-radius: 15px;
+  padding: 0.5rem 1rem; /* Reduced vertical padding */
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  min-height: 30px; /* Reduced height */
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 0.5rem;
-  box-sizing: border-box;
-  font-size: 0.6rem;
-  font-weight: bold;
-  color: #fff;
-  transform: translate(-48px, 85px);
-  white-space: normal;
-  line-height: 1.2rem;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-  transition: all 0.3s ease;
 }
 
-.answers-area {
-  position: absolute;
-  top: 67%;
-  left: 60%;
-  width: 36%;
-  height: 24%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4% 4%;
-  transform: translate(-40px, 20px);
-}
-
-.answers-area button {
-  width: 48%;
-  height: 45%;
-  border: none;
-  border-radius: 8px;
-  background: none; /* Remove gradient background */
-  color: #fff;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: none; /* Remove shadow */
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-.answers-area button:hover {
+.answer-button:hover {
   transform: translateY(-2px);
-  box-shadow: none;
-  background: none;
-}
-
-.answers-area button:active {
-  transform: translateY(0);
-}
-
-/* Position adjustments for individual answers */
-.answers-area button:nth-child(1) { transform: translate(8px, 0); }
-.answers-area button:nth-child(2) { transform: translate(-50px, 0); }
-.answers-area button:nth-child(3) { transform: translate(8px, -20px); }
-.answers-area button:nth-child(4) { transform: translate(-50px, -20px); }
-
-#stats-area {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 50%;
-  padding: 0.5rem;
-  box-sizing: border-box;
-  color: #000;
-  font-size: 0.7rem;
-  line-height: 1.1;
-  transform: translate(90px, 0); 
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 10px; 
-  display: none;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-#back-button {
-  position: absolute;
-  top: 67%;
-  left: 60%;
-  width: 48%;
-  height: 45%;
-  transform: translate(-32px, 20px);
-  background: linear-gradient(145deg, #ff6b6b, #ee5a52);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: bold;
-  cursor: pointer;
-  display: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-#back-button:hover {
-  transform: translate(-32px, 18px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
 
-#pokedex-grid {
+.answer-button:active {
+  transform: translateY(0);
+}
+
+.answer-button.correct {
+  background: linear-gradient(145deg, #4CAF50, #45a049);
+  animation: correctPulse 0.6s ease;
+}
+
+.answer-button.wrong {
+  background: linear-gradient(145deg, #f44336, #d32f2f);
+  animation: wrongShake 0.6s ease;
+}
+
+@keyframes correctPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes wrongShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Pokédex grid */
+.pokedex-grid {
   display: flex;
-  flex-wrap: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
-  margin: 0 auto;
-  padding: 0.4rem;
-  max-width: 1280px;
-  box-sizing: border-box;
   gap: 0.5rem;
+  padding: 1rem;
+  background: rgba(255,255,255,0.9);
+  border-radius: 15px;
+  scrollbar-width: thin;
+  scrollbar-color: #4ecdc4 transparent;
+}
+
+.pokedex-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.pokedex-grid::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+
+.pokedex-grid::-webkit-scrollbar-thumb {
+  background: #4ecdc4;
+  border-radius: 4px;
+}
+
+.pokedex-grid::-webkit-scrollbar-thumb:hover {
+  background: #44a08d;
 }
 
 .pokemon-card {
   flex: 0 0 auto;
-  width: 100px;
+  width: 80px;
   text-align: center;
   background: rgba(255,255,255,0.9);
-  border-radius: 15px;
+  border-radius: 10px;
   padding: 0.5rem;
   transition: all 0.3s ease;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .pokemon-card:hover {
-  transform: translateY(-5px) scale(1.05);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .pokemon-card img { 
-  width: 80px; 
-  height: 80px; 
+  width: 60px; 
+  height: 60px; 
   object-fit: contain; 
   display: block; 
   margin: 0 auto 0.25rem; 
-  transition: all 0.3s ease;
 }
 
 .pokemon-card .label { 
@@ -291,8 +382,38 @@ body {
 }
 
 @keyframes shimmer {
-  0%, 100% { box-shadow: 0 4px 15px rgba(255,215,0,0.3); }
-  50% { box-shadow: 0 8px 30px rgba(255,215,0,0.6); }
+  0%, 100% { box-shadow: 0 2px 8px rgba(255,215,0,0.3); }
+  50% { box-shadow: 0 4px 20px rgba(255,215,0,0.6); }
+}
+
+/* Stats display */
+.stats-display {
+  background: rgba(255,255,255,0.95);
+  padding: 1.5rem;
+  border-radius: 15px;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.back-button {
+  background: linear-gradient(145deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.back-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 /* Particle effects */
@@ -304,12 +425,13 @@ body {
   height: 100%;
   pointer-events: none;
   overflow: hidden;
+  z-index: 10;
 }
 
 .particle {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   background: #ffd700;
   border-radius: 50%;
   animation: float 3s ease-in-out infinite;
@@ -324,70 +446,70 @@ body {
 .achievement-popup {
   position: fixed;
   top: 20px;
-  right: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
   background: linear-gradient(145deg, #4ecdc4, #44a08d);
   color: white;
-  padding: 0.4rem;
-  border-radius: 10px;
+  padding: 1rem;
+  border-radius: 15px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  transform: translateX(400px);
   transition: transform 0.5s ease;
-  z-index: 100;
-  max-width: 300px;
+  z-index: 200;
+  max-width: 90%;
+  text-align: center;
 }
 
 .achievement-popup.show {
-  transform: translateX(0);
+  transform: translateX(-50%) translateY(0);
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .pokedex-screen {
-    width: 95vw;
-    height: 60vh;
-  }
-  
-  #game-header {
-    flex-direction: column;
-    gap: 0.5rem;
+/* Team Rocket special styling */
+.team-rocket-mode .pokemon-display {
+  background: linear-gradient(45deg, #4a0e4e, #2d1b69);
+  color: white;
+}
+
+.team-rocket-mode .question-text {
+  background: linear-gradient(145deg, #8e44ad, #9b59b6);
+  color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .game-container {
+    padding: 0.5rem;
   }
   
   .stat-item {
-    font-size: 0.8rem;
-    padding: 0.3rem 0.6rem;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
   }
   
-  .question-area {
-    font-size: 0.5rem;
-    width: 20%;
+  .pokemon-display {
+    min-height: 200px;
+    padding: 1.5rem;
   }
   
-  .answers-area button {
-  width: 48%;
-  height: 45%;
-  border: none;
-  border-radius: 8px;
-  background: none; /* Remove gradient background */
-  color: #fff;
-  font-size: 1rem;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: none; /* Remove shadow */
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  .pokemon-image {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .question-text {
+    font-size: 1rem;
+    padding: 0.8rem;
+  }
+  
+  .answer-button {
+    font-size: 1rem;
+    padding: 0.4rem 0.8rem; /* Reduced vertical padding */
+    min-height: 25px; /* Reduced height */
+  }
 }
-  
-  .pokemon-card {
-    width: 80px;
-  }
-  
-  .pokemon-card img {
-    width: 60px;
-    height: 60px;
-  }
+
+/* Hide elements initially */
+.hidden {
+  display: none !important;
 }
 
 /* Fade transitions */
@@ -399,19 +521,6 @@ body {
 .fade-in {
   opacity: 1;
   transition: opacity 0.3s ease;
-}
-
-/* Daily challenge indicator */
-.daily-challenge {
-  background: linear-gradient(45deg, #ff9a9e, #fecfef);
-  border: 2px solid #ff6b9d;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
 }
   </style>
 </head>
@@ -425,56 +534,67 @@ body {
   <!-- Game Header -->
   <div id="game-header">
     <div class="stat-item">
-      <span>Pokedex</span>
+      <span>📱</span>
       <span id="pokedex-counter">0 / 151</span>
     </div>
-    <div class="stat-item" id="achievement-counter-item">
+    <div class="stat-item">
       <span>🏅</span>
-      <span id="achievement-counter">Achievements: 0</span>
+      <span id="achievement-counter">0</span>
     </div>
     <div class="stat-item streak-counter">
       <span>🔥</span>
-      <span id="streak-counter">Streak: 0</span>
+      <span id="streak-counter">0</span>
     </div>
     <div class="stat-item">
       <span>⭐</span>
-      <span id="shiny-counter">Shinies: 0</span>
+      <span id="shiny-counter">0</span>
     </div>
-    <div class="stat-item" id="daily-challenge-indicator" style="display: none;">
-      <span>📅</span>
-      <span>Daily Challenge!</span>
-    </div>
-  <div class="stat-item" id="sound-toggle" style="cursor: pointer;">
-      🔊 Sound: ON
+    <div class="stat-item" id="sound-toggle" style="cursor: pointer;">
+      🔊
     </div>
   </div>
 
-  <!-- Team Rocket Event -->
-  <div id="rocket-event">
-    <h2>Team&nbsp;Rocket Encounter!</h2>
-    <img src="sprites/pokemon_000.png" alt="Team Rocket"
-         style="width:75px;height:auto;transform: translate(25px, 0);" />
-    <p id="rocket-message"></p>
-    <div class="particles" id="rocket-particles"></div>
-  </div>
+  <!-- Main Game Container -->
+  <div class="game-container">
+    <!-- Pokédex Device -->
+    <div class="pokedex-device" id="pokedex-device">
+      <div class="pokedex-lights">
+        <div class="light red"></div>
+        <div class="light yellow"></div>
+        <div class="light green"></div>
+      </div>
+      
+      <div class="screen-container">
+        <div class="pokemon-display" id="pokemon-display">
+          <img id="pokemon-image" class="pokemon-image" src="" alt="Pokemon" />
+          <div class="particles" id="game-particles"></div>
+        </div>
+        
+        <div class="screen-details">
+          <div class="red-button"></div>
+          <div class="speaker-grille">
+            <div class="speaker-line"></div>
+            <div class="speaker-line"></div>
+            <div class="speaker-line"></div>
+            <div class="speaker-line"></div>
+          </div>
+        </div>
+      </div>
 
-  <!-- Main Game Screen -->
-  <div id="round-screen" class="pokedex-screen silhouette-bg">
-    <div class="display-area">
-      <img id="silhouette" src="" alt="Silhouette" />
-      <div id="stats-area" style="display:none;"></div>
+      <!-- Stats display for Pokédex entries -->
+      <div id="stats-display" class="stats-display hidden"></div>
+      <button id="back-button" class="back-button hidden">Back to Game</button>
     </div>
-    <div class="question-area" id="question-area"></div>
-    <div class="answers-area" id="answers-area"></div>
-    <button id="back-button" class="back-btn" style="display:none;">Back</button>
-    <div class="particles" id="game-particles"></div>
+
+    <!-- Question and Answers Area -->
+    <div class="question-answers-area" id="question-answers-area">
+      <div class="question-text" id="question-text">Loading...</div>
+      <div class="answers-grid" id="answers-grid"></div>
+    </div>
+
+    <!-- Pokédex Grid -->
+    <div class="pokedex-grid" id="pokedex-grid"></div>
   </div>
-
-  <!-- Hidden Pokédex Title for JS compatibility -->
-<h2 style="display:none;"><span id="pokedex-counter-title">(0 / 151)</span></h2>
-
-  <!-- Pokédex Grid -->
-  <div id="pokedex-grid"></div>
 
   <!-- Achievement Popup -->
   <div id="achievement-popup" class="achievement-popup">
@@ -485,7 +605,6 @@ body {
   <!-- Pokémon Data -->
   <script id="pokedex-data" type="application/json">
 [
-
   {
     "id": 1,
     "name": "bulbasaur",
@@ -493,7 +612,7 @@ body {
     "weight": "6.9 kg",
     "ability": "Overgrow",
     "move": ["Tackle","Growl","Leech Seed","Vine Whip","PoisonPowder","Razor Leaf","Growth","Sleep Powder","SolarBeam"],
-    "egg_group": "Monster, Plant",
+    "egg_group": "Monster, Grass",
     "type": ["Grass","Poison"],
     "super_effective": ["Ground","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
@@ -505,7 +624,7 @@ body {
     "weight": "13.0 kg",
     "ability": "Overgrow",
     "move": ["Tackle","Growl","Leech Seed","Vine Whip","PoisonPowder","Razor Leaf","Growth","Sleep Powder","SolarBeam"],
-    "egg_group": "Monster, Plant",
+    "egg_group": "Monster, Grass",
     "type": ["Grass","Poison"],
     "super_effective": ["Ground","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
@@ -517,7 +636,7 @@ body {
     "weight": "100.0 kg",
     "ability": "Overgrow",
     "move": ["Tackle","Growl","Leech Seed","Vine Whip","PoisonPowder","Razor Leaf","Growth","Sleep Powder","SolarBeam"],
-    "egg_group": "Monster, Plant",
+    "egg_group": "Monster, Grass",
     "type": ["Grass","Poison"],
     "super_effective": ["Ground","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
@@ -709,7 +828,7 @@ body {
     "weight": "3.5 kg",
     "ability": "Run Away",
     "move": ["Tackle","Tail Whip","Quick Attack","Hyper Fang","Focus Energy","Super Fang"],
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "type": ["Normal"],
     "super_effective": [],
     "weak_against": ["Fighting"]
@@ -721,7 +840,7 @@ body {
     "weight": "18.5 kg",
     "ability": "Run Away",
     "move": ["Tackle","Tail Whip","Quick Attack","Hyper Fang","Focus Energy","Super Fang"],
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "type": ["Normal"],
     "super_effective": [],
     "weak_against": ["Fighting"]
@@ -758,7 +877,7 @@ body {
     "height": "2.0 m",
     "weight": "6.9 kg",
     "ability": "Intimidate",
-    "egg_group": "Dragon, Ground",
+    "egg_group": "Dragon, Field",
     "super_effective": ["Grass"],
     "weak_against": ["Ground","Psychic"]
   },
@@ -770,7 +889,7 @@ body {
     "height": "3.5 m",
     "weight": "65.0 kg",
     "ability": "Intimidate",
-    "egg_group": "Dragon, Ground",
+    "egg_group": "Dragon, Field",
     "super_effective": ["Grass"],
     "weak_against": ["Ground","Psychic"]
   },
@@ -782,7 +901,7 @@ body {
     "height": "0.4 m",
     "weight": "6.0 kg",
     "ability": "Static",
-    "egg_group": "Fairy, Ground",
+    "egg_group": "Fairy, Field",
     "super_effective": ["Flying","Water"],
     "weak_against": ["Ground"]
   },
@@ -794,7 +913,7 @@ body {
     "height": "0.8 m",
     "weight": "30.0 kg",
     "ability": "Static",
-    "egg_group": "Fairy, Ground",
+    "egg_group": "Fairy, Field",
     "super_effective": ["Flying","Water"],
     "weak_against": ["Ground"]
   },
@@ -806,7 +925,7 @@ body {
     "height": "0.6 m",
     "weight": "12.0 kg",
     "ability": "Sand Veil",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Electric","Fire","Poison","Rock"],
     "weak_against": ["Grass","Ice","Water"]
   },
@@ -818,7 +937,7 @@ body {
     "height": "1.0 m",
     "weight": "29.5 kg",
     "ability": "Sand Veil",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Electric","Fire","Poison","Rock"],
     "weak_against": ["Grass","Ice","Water"]
   },
@@ -830,7 +949,7 @@ body {
     "height": "0.4 m",
     "weight": "7.0 kg",
     "ability": "Poison Point",
-    "egg_group": "Ground, Monster",
+    "egg_group": "Monster, Field",
     "super_effective": ["Grass"],
     "weak_against": ["Ground","Psychic"]
   },
@@ -842,7 +961,7 @@ body {
     "height": "0.8 m",
     "weight": "20.0 kg",
     "ability": "Poison Point",
-    "egg_group": "Ground, Monster",
+    "egg_group": "Monster, Field",
     "super_effective": ["Grass"],
     "weak_against": ["Ground","Psychic"]
   },
@@ -854,7 +973,7 @@ body {
     "height": "1.3 m",
     "weight": "60.0 kg",
     "ability": "Poison Point",
-    "egg_group": "Ground, Monster",
+    "egg_group": "Monster, Field",
     "super_effective": ["Electric","Fire","Grass","Rock"],
     "weak_against": ["Grass","Ground","Ice","Psychic","Water"]
   },
@@ -866,7 +985,7 @@ body {
     "height": "0.5 m",
     "weight": "9.0 kg",
     "ability": "Poison Point",
-    "egg_group": "Ground, Monster",
+    "egg_group": "Monster, Field",
     "super_effective": ["Grass"],
     "weak_against": ["Ground","Psychic"]
   },
@@ -878,7 +997,7 @@ body {
     "height": "0.9 m",
     "weight": "19.5 kg",
     "ability": "Poison Point",
-    "egg_group": "Ground, Monster",
+    "egg_group": "Monster, Field",
     "super_effective": ["Grass"],
     "weak_against": ["Ground","Psychic"]
   },
@@ -890,7 +1009,7 @@ body {
     "height": "1.4 m",
     "weight": "62.0 kg",
     "ability": "Poison Point",
-    "egg_group": "Ground, Monster",
+    "egg_group": "Monster, Field",
     "super_effective": ["Electric","Fire","Grass","Rock"],
     "weak_against": ["Grass","Ground","Ice","Psychic","Water"]
   },
@@ -926,7 +1045,7 @@ body {
     "height": "0.6 m",
     "weight": "9.9 kg",
     "ability": "Flash Fire",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Bug","Grass","Ice"],
     "weak_against": ["Ground","Rock","Water"]
   },
@@ -938,7 +1057,7 @@ body {
     "height": "1.1 m",
     "weight": "19.9 kg",
     "ability": "Flash Fire",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Bug","Grass","Ice"],
     "weak_against": ["Ground","Rock","Water"]
   },
@@ -998,7 +1117,7 @@ body {
     "height": "0.5 m",
     "weight": "5.4 kg",
     "ability": "Chlorophyll",
-    "egg_group": "Plant",
+    "egg_group": "Grass",
     "super_effective": ["Ground","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
   },
@@ -1010,7 +1129,7 @@ body {
     "height": "0.8 m",
     "weight": "8.6 kg",
     "ability": "Chlorophyll",
-    "egg_group": "Plant",
+    "egg_group": "Grass",
     "super_effective": ["Ground","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
   },
@@ -1022,7 +1141,7 @@ body {
     "height": "1.2 m",
     "weight": "18.6 kg",
     "ability": "Chlorophyll",
-    "egg_group": "Plant",
+    "egg_group": "Grass",
     "super_effective": ["Ground","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
   },
@@ -1034,7 +1153,7 @@ body {
     "height": "0.3 m",
     "weight": "5.4 kg",
     "ability": "Effect Spore",
-    "egg_group": "Bug, Plant",
+    "egg_group": "Bug, Grass",
     "super_effective": ["Ground","Poison","Psychic","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ice","Poison","Rock"]
   },
@@ -1046,7 +1165,7 @@ body {
     "height": "1.0 m",
     "weight": "29.5 kg",
     "ability": "Effect Spore",
-    "egg_group": "Bug, Plant",
+    "egg_group": "Bug, Grass",
     "super_effective": ["Ground","Poison","Psychic","Rock","Water"],
     "weak_against": ["Bug","Fire","Flying","Ice","Poison","Rock"]
   },
@@ -1082,7 +1201,7 @@ body {
     "height": "0.2 m",
     "weight": "0.8 kg",
     "ability": "Sand Veil",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Electric","Fire","Poison","Rock"],
     "weak_against": ["Grass","Ice","Water"]
   },
@@ -1094,7 +1213,7 @@ body {
     "height": "0.7 m",
     "weight": "33.3 kg",
     "ability": "Sand Veil",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Electric","Fire","Poison","Rock"],
     "weak_against": ["Grass","Ice","Water"]
   },
@@ -1106,7 +1225,7 @@ body {
     "height": "0.4 m",
     "weight": "4.2 kg",
     "ability": "Pickup",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": [],
     "weak_against": ["Fighting"]
   },
@@ -1118,7 +1237,7 @@ body {
     "height": "1.0 m",
     "weight": "32.0 kg",
     "ability": "Limber",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": [],
     "weak_against": ["Fighting"]
   },
@@ -1130,7 +1249,7 @@ body {
     "height": "0.8 m",
     "weight": "19.6 kg",
     "ability": "Damp",
-    "egg_group": "Ground, Water 1",
+    "egg_group": "Water 1, Field",
     "super_effective": ["Fire","Ground","Rock"],
     "weak_against": ["Electric","Grass"]
   },
@@ -1142,7 +1261,7 @@ body {
     "height": "1.7 m",
     "weight": "76.6 kg",
     "ability": "Damp",
-    "egg_group": "Ground, Water 1",
+    "egg_group": "Water 1, Field",
     "super_effective": ["Fire","Ground","Rock"],
     "weak_against": ["Electric","Grass"]
   },
@@ -1154,7 +1273,7 @@ body {
     "height": "0.5 m",
     "weight": "28.0 kg",
     "ability": "Vital Spirit",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Ice","Normal","Rock"],
     "weak_against": ["Flying","Psychic"]
   },
@@ -1166,7 +1285,7 @@ body {
     "height": "1.0 m",
     "weight": "32.0 kg",
     "ability": "Vital Spirit",
-    "egg_group": "Ground",
+    "egg_group": "Field",
     "super_effective": ["Ice","Normal","Rock"],
     "weak_against": ["Flying","Psychic"]
   },
@@ -1178,7 +1297,7 @@ body {
    "height": "0.7 m",
    "weight": "19.0 kg",
    "ability": "Intimidate",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": ["Bug","Grass","Ice"],
    "weak_against": ["Ground","Rock","Water"]
  },
@@ -1190,7 +1309,7 @@ body {
    "height": "1.9 m",
    "weight": "155.0 kg",
    "ability": "Intimidate",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": ["Bug","Grass","Ice"],
    "weak_against": ["Ground","Rock","Water"]
  },
@@ -1310,7 +1429,7 @@ body {
    "height": "0.7 m",
    "weight": "4.0 kg",
    "ability": "Chlorophyll",
-   "egg_group": "Plant",
+   "egg_group": "Grass",
    "super_effective": ["Ground","Rock","Water"],
    "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
  },
@@ -1322,7 +1441,7 @@ body {
    "height": "1.0 m",
    "weight": "6.4 kg",
    "ability": "Chlorophyll",
-   "egg_group": "Plant",
+   "egg_group": "Grass",
    "super_effective": ["Ground","Rock","Water"],
    "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
  },
@@ -1334,7 +1453,7 @@ body {
    "height": "1.7 m",
    "weight": "15.5 kg",
    "ability": "Chlorophyll",
-   "egg_group": "Plant",
+   "egg_group": "Grass",
    "super_effective": ["Ground","Rock","Water"],
    "weak_against": ["Bug","Fire","Flying","Ground","Ice","Poison","Psychic"]
  },
@@ -1406,7 +1525,7 @@ body {
    "height": "1.0 m",
    "weight": "30.0 kg",
    "ability": "Run Away",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": ["Bug","Grass","Ice"],
    "weak_against": ["Ground","Rock","Water"]
  },
@@ -1418,7 +1537,7 @@ body {
    "height": "1.7 m",
    "weight": "95.0 kg",
    "ability": "Run Away",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": ["Bug","Grass","Ice"],
    "weak_against": ["Ground","Rock","Water"]
  },
@@ -1449,7 +1568,7 @@ body {
  {
    "id": 81,
    "name": "magnemite",
-   "type": ["Electric","Steel"],
+   "type": ["Electric"],
    "move": ["Tackle","Sonic Boom","Thunder Shock","Supersonic","Thunder Wave","Swift","Screech"],
    "height": "0.3 m",
    "weight": "6.0 kg",
@@ -1461,7 +1580,7 @@ body {
  {
    "id": 82,
    "name": "magneton",
-   "type": ["Electric","Steel"],
+   "type": ["Electric"],
    "move": ["Tackle","Sonic Boom","Thunder Shock","Supersonic","Thunder Wave","Swift","Screech"],
    "height": "1.0 m",
    "weight": "60.0 kg",
@@ -1478,7 +1597,7 @@ body {
    "height": "0.8 m",
    "weight": "15.0 kg",
    "ability": "Keen Eye",
-   "egg_group": "Flying, Ground",
+   "egg_group": "Flying, Field",
    "super_effective": ["Bug","Fighting","Grass"],
    "weak_against": ["Electric","Fighting","Ice","Rock"]
  },
@@ -1514,7 +1633,7 @@ body {
    "height": "1.1 m",
    "weight": "90.0 kg",
    "ability": "Thick Fat",
-   "egg_group": "Ground, Water 1",
+   "egg_group": "Water 1, Field",
    "super_effective": ["Fire","Ground","Rock"],
    "weak_against": ["Electric","Grass"]
  },
@@ -1526,7 +1645,7 @@ body {
    "height": "1.7 m",
    "weight": "120.0 kg",
    "ability": "Thick Fat",
-   "egg_group": "Ground, Water 1",
+   "egg_group": "Water 1, Field",
    "super_effective": ["Dragon","Fire","Flying","Grass","Ground","Rock"],
    "weak_against": ["Electric","Fighting","Fire","Grass","Rock"]
  },
@@ -1706,7 +1825,7 @@ body {
    "height": "0.4 m",
    "weight": "2.5 kg",
    "ability": "Chlorophyll",
-   "egg_group": "Plant",
+   "egg_group": "Grass",
    "super_effective": ["Fighting","Ground","Poison","Rock","Water"],
    "weak_against": ["Bug","Fire","Flying","Ghost","Ice","Poison"]
  },
@@ -1718,7 +1837,7 @@ body {
    "height": "2.0 m",
    "weight": "120.0 kg",
    "ability": "Chlorophyll",
-   "egg_group": "Plant",
+   "egg_group": "Grass",
    "super_effective": ["Fighting","Ground","Poison","Rock","Water"],
    "weak_against": ["Bug","Fire","Flying","Ghost","Ice","Poison"]
  },
@@ -1814,7 +1933,7 @@ body {
    "height": "1.0 m",
    "weight": "115.0 kg",
    "ability": "Lightning Rod",
-   "egg_group": "Ground, Monster",
+   "egg_group": "Monster, Field",
    "super_effective": ["Bug","Electric","Fire","Flying","Ice","Poison"],
    "weak_against": ["Fighting","Grass","Ground","Ice","Water"]
  },
@@ -1826,7 +1945,7 @@ body {
    "height": "1.9 m",
    "weight": "120.0 kg",
    "ability": "Lightning Rod",
-   "egg_group": "Ground, Monster",
+   "egg_group": "Monster, Field",
    "super_effective": ["Bug","Electric","Fire","Flying","Ice","Poison"],
    "weak_against": ["Fighting","Grass","Ground","Ice","Water"]
  },
@@ -1850,7 +1969,7 @@ body {
    "height": "1.0 m",
    "weight": "35.0 kg",
    "ability": "Chlorophyll",
-   "egg_group": "Plant",
+   "egg_group": "Grass",
    "super_effective": ["Ground","Rock","Water"],
    "weak_against": ["Bug","Fire","Flying","Ice","Poison"]
  },
@@ -1941,14 +2060,14 @@ body {
  {
    "id": 122,
    "name": "mr-mime",
-   "type": ["Psychic","Fairy"],
+   "type": ["Psychic"],
    "move": ["Barrier","Confusion","Light Screen","Reflect","Double Slap","Meditate","Substitute","Psychic"],
    "height": "1.3 m",
    "weight": "54.5 kg",
    "ability": "Soundproof",
    "egg_group": "Human-Like",
-   "super_effective": ["Dark","Dragon","Fighting","Poison"],
-   "weak_against": ["Bug","Ghost","Poison","Steel"]
+   "super_effective": ["Fighting","Poison"],
+   "weak_against": ["Bug","Ghost"]
  },
  {
    "id": 123,
@@ -2018,7 +2137,7 @@ body {
    "height": "1.4 m",
    "weight": "88.4 kg",
    "ability": "Intimidate",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": [],
    "weak_against": ["Fighting"]
  },
@@ -2078,7 +2197,7 @@ body {
    "height": "0.3 m",
    "weight": "6.5 kg",
    "ability": "Run Away",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": [],
    "weak_against": ["Fighting"]
  },
@@ -2090,7 +2209,7 @@ body {
    "height": "1.0 m",
    "weight": "29.0 kg",
    "ability": "Water Absorb",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": ["Fire","Ground","Rock"],
    "weak_against": ["Electric","Grass"]
  },
@@ -2102,7 +2221,7 @@ body {
    "height": "0.8 m",
    "weight": "24.5 kg",
    "ability": "Volt Absorb",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": ["Flying","Water"],
    "weak_against": ["Ground"]
  },
@@ -2114,7 +2233,7 @@ body {
    "height": "0.9 m",
    "weight": "25.0 kg",
    "ability": "Flash Fire",
-   "egg_group": "Ground",
+   "egg_group": "Field",
    "super_effective": ["Bug","Grass","Ice"],
    "weak_against": ["Ground","Rock","Water"]
  },
@@ -2298,10 +2417,9 @@ body {
    "super_effective": ["Fighting","Poison"],
    "weak_against": ["Bug","Ghost"]
  }
-
-
-  ]
+]
   </script>
+
   <script>
     // Game state variables
     const pokemonData = JSON.parse(document.getElementById("pokedex-data").textContent.trim());
@@ -2315,14 +2433,14 @@ body {
     let totalShinyCount = 0;
     let gameAchievements = {};
     let soundEnabled = true;
+    let gameMode = 'main'; // 'main', 'bonus', 'pokedex', 'rocket'
 
-document.getElementById('sound-toggle').addEventListener('click', () => {
-  soundEnabled = !soundEnabled;
-  document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
-});
+    document.getElementById('sound-toggle').addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊' : '🔇';
+    });
 
-
-    // Sound effects (using data URLs for compatibility)
+    // Sound effects using Web Audio API
     const sounds = {
       correct: createBeepSound(800, 0.2),
       wrong: createBeepSound(300, 0.3),
@@ -2334,105 +2452,130 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
     // Utility functions
     function padId(num) { return String(num).padStart(3, "0"); }
     function getSpritePath(id, shiny=false) { 
+      // NOTE: For this to work, you need a 'sprites' folder with images named like:
+      // pokemon_001.png, pokemon_001_shiny.png, pokemon_001_silhouette.png, etc.
       const padded = padId(id); 
-      return shiny ? `sprites/pokemon_${padded}_shiny.png` : `sprites/pokemon_${padded}.png`; 
+      // Using a placeholder service if local sprites aren't available
+      const baseUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+      if (shiny) {
+          return `${baseUrl}shiny/${id}.png`;
+      }
+      return `${baseUrl}${id}.png`;
     }
-    function getSilhouettePath(id) { return `sprites/pokemon_${padId(id)}_silhouette.png`; }
+    function getSilhouettePath(id) { 
+        // For silhouettes, we'll just use the normal sprite and apply a heavy brightness filter in JS
+        return getSpritePath(id, false);
+    }
     function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
     // Create simple sound effects using Web Audio API
     function createBeepSound(frequency, duration) {
       return () => {
         if (!soundEnabled) return;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = frequency;
-        oscillator.type = 'sine';
-        
-        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + duration);
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = frequency;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + duration);
+        } catch (e) {
+          console.log('Audio not available');
+        }
       };
     }
 
     function createSuccessSound() {
       return () => {
         if (!soundEnabled) return;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const frequencies = [523, 659, 784, 1047]; // C, E, G, C
-        
-        frequencies.forEach((freq, i) => {
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const frequencies = [523, 659, 784, 1047]; // C, E, G, C
           
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.value = freq;
-          oscillator.type = 'sine';
-          
-          const startTime = audioContext.currentTime + i * 0.1;
-          gainNode.gain.setValueAtTime(0.2, startTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
-          
-          oscillator.start(startTime);
-          oscillator.stop(startTime + 0.3);
-        });
+          frequencies.forEach((freq, i) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = freq;
+            oscillator.type = 'sine';
+            
+            const startTime = audioContext.currentTime + i * 0.1;
+            gainNode.gain.setValueAtTime(0.2, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.3);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + 0.3);
+          });
+        } catch (e) {
+          console.log('Audio not available');
+        }
       };
     }
 
     function createRocketSound() {
       return () => {
         if (!soundEnabled) return;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
-        oscillator.frequency.linearRampToValueAtTime(100, audioContext.currentTime + 1);
-        oscillator.type = 'sawtooth';
-        
-        gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-        
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 1);
-      };
-    }
-
-    function createShinySound() {
-      return () => {
-        if (!soundEnabled) return;
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const frequencies = [1047, 1319, 1568, 2093]; // High pitched magical sound
-        
-        frequencies.forEach((freq, i) => {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
           const oscillator = audioContext.createOscillator();
           const gainNode = audioContext.createGain();
           
           oscillator.connect(gainNode);
           gainNode.connect(audioContext.destination);
           
-          oscillator.frequency.value = freq;
-          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+          oscillator.frequency.linearRampToValueAtTime(100, audioContext.currentTime + 1);
+          oscillator.type = 'sawtooth';
           
-          const startTime = audioContext.currentTime + i * 0.05;
-          gainNode.gain.setValueAtTime(0.3, startTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+          gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
           
-          oscillator.start(startTime);
-          oscillator.stop(startTime + 0.4);
-        });
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 1);
+        } catch (e) {
+          console.log('Audio not available');
+        }
+      };
+    }
+
+    function createShinySound() {
+      return () => {
+        if (!soundEnabled) return;
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const frequencies = [1047, 1319, 1568, 2093]; // High pitched magical sound
+          
+          frequencies.forEach((freq, i) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 'sine';
+            
+            const startTime = audioContext.currentTime + i * 0.05;
+            gainNode.gain.setValueAtTime(0.3, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + 0.4);
+          });
+        } catch (e) {
+          console.log('Audio not available');
+        }
       };
     }
 
@@ -2517,7 +2660,7 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
       }, 4000);
     }
 
-    // Load saved data
+    // Load and save game data
     function loadGameData() {
       unlocked = JSON.parse(localStorage.getItem("unlockedPokemon")) || {};
       currentStreak = parseInt(localStorage.getItem("pokemonStreak")) || 0;
@@ -2539,20 +2682,17 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
     function updateAllCounters() {
       const unlockedCount = Object.keys(unlocked).length;
       document.getElementById("pokedex-counter").textContent = `${unlockedCount} / 151`;
-      document.getElementById("pokedex-counter-title").textContent = `(${unlockedCount} / 151)`;
-      document.getElementById("streak-counter").textContent = `Streak: ${currentStreak}`;
-      document.getElementById("shiny-counter").textContent = `Shinies: ${totalShinyCount}`;
+      document.getElementById("streak-counter").textContent = `${currentStreak}`;
+      document.getElementById("shiny-counter").textContent = `${totalShinyCount}`;
 
       const achievementsUnlocked = Object.keys(gameAchievements || {}).length;
-      const achElem = document.getElementById("achievement-counter");
-      if (achElem) {
-        achElem.textContent = `Achievements: ${achievementsUnlocked}`;
-      }
-
+      document.getElementById("achievement-counter").textContent = `${achievementsUnlocked}`;
     }
 
     // Game logic functions
     function startRound() {
+      gameMode = 'main';
+      
       // Hide loading screen if still visible
       const loadingScreen = document.getElementById('loading-screen');
       if (loadingScreen.style.display !== 'none') {
@@ -2562,19 +2702,14 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
         }, 500);
       }
 
-      document.getElementById("round-screen").style.display = "block";
-      document.getElementById("round-screen").classList.remove("quiz-bg");
-      document.getElementById("round-screen").classList.add("silhouette-bg");
-      document.getElementById("stats-area").style.display = "none";
-      document.getElementById("back-button").style.display = "none";
+      // Reset UI state
+      document.getElementById('stats-display').classList.add('hidden');
+      document.getElementById('back-button').classList.add('hidden');
+      document.getElementById('question-answers-area').classList.remove('hidden');
+      document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
       
-      const qAreaReset = document.getElementById("question-area");
-      qAreaReset.style.fontSize = "1.4rem";
-      qAreaReset.style.lineHeight = "normal";
-      qAreaReset.style.whiteSpace = "normal";
-      qAreaReset.style.color = "#fff";
-      
-      document.getElementById("answers-area").style.display = "flex";
+      const pokemonDisplay = document.getElementById('pokemon-display');
+      pokemonDisplay.classList.remove('energy-burst');
 
       // Team Rocket encounter (10% chance, not twice in a row)
       if (!lastRocket && Math.random() < 0.10) {
@@ -2588,49 +2723,61 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
       const lockedList = pokemonData.filter(p => !(p.id in unlocked));
       if (lockedList.length === 0) {
         // Game completed!
-        document.getElementById("question-area").textContent = "Congratulations! You've caught them all!";
+        document.getElementById("question-text").textContent = "Congratulations! You've caught them all!";
         showAchievement("Pokémon Master", "Completed the entire Pokédex!");
+        document.getElementById('answers-grid').innerHTML = '';
         return;
       }
 
       currentPokemon = lockedList[Math.floor(Math.random() * lockedList.length)];
-      const silEl = document.getElementById("silhouette");
-      silEl.src = getSilhouettePath(currentPokemon.id);
-      silEl.style.imageRendering = "auto";
+      const pokemonImg = document.getElementById("pokemon-image");
+      pokemonImg.src = getSilhouettePath(currentPokemon.id);
+      pokemonImg.style.filter = 'brightness(0) drop-shadow(2px 2px 4px rgba(0,0,0,0.3))';
+      pokemonImg.classList.remove('shiny');
       
-      document.getElementById("question-area").textContent = "Who's that Pokémon?";
+      document.getElementById("question-text").textContent = "Who's that Pokémon?";
       
       const otherNames = shuffle(pokemonData.filter(p => p.id !== currentPokemon.id)).slice(0,3).map(p => p.name);
       const options = shuffle([currentPokemon.name, ...otherNames]);
       
-      const answersDiv = document.getElementById("answers-area");
-      answersDiv.innerHTML = "";
+      const answersGrid = document.getElementById("answers-grid");
+      answersGrid.innerHTML = "";
       options.forEach(name => {
         const btn = document.createElement("button");
+        btn.className = "answer-button";
         btn.textContent = name;
-        btn.onclick = () => handleGuess(name);
-        answersDiv.appendChild(btn);
+        btn.onclick = () => handleGuess(name, btn);
+        answersGrid.appendChild(btn);
       });
     }
 
-    function handleGuess(name) {
+    function handleGuess(name, buttonElement) {
       if (name === currentPokemon.name) {
         sounds.correct();
+        buttonElement.classList.add('correct');
         currentStreak++;
         updateAllCounters();
-        document.getElementById("question-area").textContent = "Correct! Bonus Round.";
-        startBonusRound();
+        document.getElementById("question-text").textContent = "Correct! Bonus Round starting...";
+        
+        setTimeout(() => {
+          startBonusRound();
+        }, 1000);
       } else {
         sounds.wrong();
+        buttonElement.classList.add('wrong');
         currentStreak = 0;
         updateAllCounters();
-        document.getElementById("question-area").textContent = "Wrong! New silhouette coming...";
-        setTimeout(startRound, 1200);
+        document.getElementById("question-text").textContent = "Wrong! Try again with a new Pokémon...";
+        
+        setTimeout(() => {
+          startRound();
+        }, 1500);
       }
       saveGameData();
     }
 
     function handleTeamRocket() {
+      gameMode = 'rocket';
       sounds.rocket();
       
       const unlockedCount = Object.keys(unlocked).length;
@@ -2639,22 +2786,23 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
         return;
       }
 
-      const silEl = document.getElementById("silhouette");
-      silEl.src = "sprites/pokemon_000.png";
-      silEl.style.imageRendering = "pixelated";
-      silEl.style.width = "40%";
-      silEl.style.height = "auto";
-      silEl.style.transform = "translate(-20px, 130px)";
+      document.getElementById('pokedex-device').classList.add('team-rocket-mode');
+      
+      const pokemonImg = document.getElementById("pokemon-image");
+      pokemonImg.src = "sprites/pokemon_000.png"; 
+      pokemonImg.style.filter = '';
+      pokemonImg.classList.remove('shiny');
 
-      document.getElementById("answers-area").style.display = "none";
-
-      const qArea = document.getElementById("question-area");
+      // Hide answers but keep the question area visible
+      const answersGrid = document.getElementById('answers-grid');
+      answersGrid.innerHTML = '';
+      
       const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
       let message;
 
       if (Math.random() < 0.75 && normalKeys.length > 0) {
         const stealId = parseInt(normalKeys[Math.floor(Math.random() * normalKeys.length)], 10);
-        const stolenName = pokemonData.find(p => p.id === stealId).name;
+        const stolenName = pokemonData.find(p => p.id === stealId)?.name || `Pokémon #${stealId}`;
         delete unlocked[stealId];
         totalShinyCount = Object.values(unlocked).filter(type => type === "shiny").length;
         saveGameData();
@@ -2668,25 +2816,20 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
         message = "Team Rocket tried to steal a Pokémon, but failed!";
       }
 
-      qArea.textContent = message;
+      document.getElementById("question-text").textContent = message;
 
       setTimeout(() => {
-        silEl.style.width = "";
-        silEl.style.height = "";
-        silEl.style.transform = "";
-        qArea.style.fontSize = "1.2rem";
-        qArea.style.lineHeight = "normal";
-        qArea.style.whiteSpace = "normal";
-        qArea.style.color = "#fff";
-        document.getElementById("answers-area").style.display = "flex";
+        // Reset everything properly
+        document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
         startRound();
       }, 4000);
     }
 
     function startBonusRound() {
-      const screen = document.getElementById("round-screen");
-      screen.classList.remove("silhouette-bg");
-      screen.classList.add("quiz-bg");
+      gameMode = 'bonus';
+      
+      const pokemonDisplay = document.getElementById('pokemon-display');
+      pokemonDisplay.classList.add('energy-burst');
       
       // Higher shiny chance for streaks
       let shinyChance = 0.10;
@@ -2695,129 +2838,152 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
       
       currentIsShinyRound = Math.random() < shinyChance;
       
-      const silEl = document.getElementById("silhouette");
-      silEl.src = getSpritePath(currentPokemon.id, currentIsShinyRound);
-      silEl.style.imageRendering = "pixelated";
+      const pokemonImg = document.getElementById("pokemon-image");
+      pokemonImg.src = getSpritePath(currentPokemon.id, currentIsShinyRound);
+      pokemonImg.style.filter = '';
+      
+      if (currentIsShinyRound) {
+        pokemonImg.classList.add('shiny');
+      }
       
       const stats = ["height","weight","ability","id","egg_group","type","super_effective","weak_against","move"];
       bonusQuestions = shuffle(stats).slice(0,3);
       bonusIndex = 0;
-      askNextBonusQuestion();
+      
+      setTimeout(() => {
+        askNextBonusQuestion();
+      }, 1000);
     }
 
-function askNextBonusQuestion() {
-  if (bonusIndex >= bonusQuestions.length) {
-    unlockPokemon();
-    return;
-  }
+    function askNextBonusQuestion() {
+      if (bonusIndex >= bonusQuestions.length) {
+        unlockPokemon();
+        return;
+      }
 
-  const stat = bonusQuestions[bonusIndex];
-  let questionText = "", correctAnswer = "", pool = [];
+      const stat = bonusQuestions[bonusIndex];
+      let questionText = "", correctAnswer = "", pool = [];
 
-  if (stat === "height") {
-    questionText = `What is ${currentPokemon.name}'s height?`;
-    correctAnswer = currentPokemon.height;
-    pool = pokemonData.map(p => p.height);
-  } else if (stat === "weight") {
-    questionText = `What is ${currentPokemon.name}'s weight?`;
-    correctAnswer = currentPokemon.weight;
-    pool = pokemonData.map(p => p.weight);
-  } else if (stat === "ability") {
-    questionText = `What is ${currentPokemon.name}'s ability?`;
-    correctAnswer = currentPokemon.ability;
-    pool = pokemonData.map(p => p.ability);
-  } else if (stat === "id") {
-    questionText = `What is ${currentPokemon.name}'s Pokédex number?`;
-    correctAnswer = String(currentPokemon.id);
-    pool = pokemonData.map(p => String(p.id));
-  } else if (stat === "egg_group") {
-    questionText = `What is ${currentPokemon.name}'s egg group?`;
-    correctAnswer = currentPokemon.egg_group;
-    pool = pokemonData.map(p => p.egg_group);
-  } else if (stat === "type") {
-    questionText = `What is ${currentPokemon.name}'s type?`;
-    correctAnswer = currentPokemon.type.join(", ");
-    pool = pokemonData.map(p => p.type.join(", "));
-  } else if (stat === "super_effective") {
-    questionText = `Which type is ${currentPokemon.name} super effective against?`;
-    if (currentPokemon.super_effective.length > 0) {
-      correctAnswer = currentPokemon.super_effective[Math.floor(Math.random() * currentPokemon.super_effective.length)];
-      // Get other types from all pokemon
-      const allTypes = new Set();
-      pokemonData.forEach(p => {
-        p.super_effective.forEach(type => allTypes.add(type));
-        p.weak_against.forEach(type => allTypes.add(type));
-        p.type.forEach(type => allTypes.add(type));
+      if (stat === "height") {
+        questionText = `What is ${currentPokemon.name}'s height?`;
+        correctAnswer = currentPokemon.height;
+        pool = pokemonData.map(p => p.height);
+      } else if (stat === "weight") {
+        questionText = `What is ${currentPokemon.name}'s weight?`;
+        correctAnswer = currentPokemon.weight;
+        pool = pokemonData.map(p => p.weight);
+      } else if (stat === "ability") {
+        questionText = `What is ${currentPokemon.name}'s ability?`;
+        correctAnswer = currentPokemon.ability;
+        pool = pokemonData.map(p => p.ability);
+      } else if (stat === "id") {
+        questionText = `What is ${currentPokemon.name}'s Pokédex number?`;
+        correctAnswer = String(currentPokemon.id);
+        pool = pokemonData.map(p => String(p.id));
+      } else if (stat === "egg_group") {
+        questionText = `What is ${currentPokemon.name}'s egg group?`;
+        correctAnswer = currentPokemon.egg_group;
+        pool = pokemonData.map(p => p.egg_group);
+      } else if (stat === "type") {
+        questionText = `What is ${currentPokemon.name}'s type?`;
+        correctAnswer = currentPokemon.type.join(", ");
+        pool = pokemonData.map(p => p.type.join(", "));
+      } else if (stat === "super_effective") {
+        questionText = `Which type is ${currentPokemon.name} super effective against?`;
+        if (currentPokemon.super_effective.length > 0) {
+          correctAnswer = currentPokemon.super_effective[Math.floor(Math.random() * currentPokemon.super_effective.length)];
+          const allTypes = new Set();
+          pokemonData.forEach(p => {
+            p.super_effective.forEach(type => allTypes.add(type));
+            p.weak_against.forEach(type => allTypes.add(type));
+            p.type.forEach(type => allTypes.add(type));
+          });
+          // Remove ALL super effective types for this Pokemon, not just the correct answer
+          pool = Array.from(allTypes).filter(type => !currentPokemon.super_effective.includes(type));
+        } else {
+          correctAnswer = "None";
+          pool = ["Fire", "Water", "Grass", "Electric"];
+        }
+      } else if (stat === "weak_against") {
+        questionText = `Which type is ${currentPokemon.name} weak against?`;
+        if (currentPokemon.weak_against.length > 0) {
+          correctAnswer = currentPokemon.weak_against[Math.floor(Math.random() * currentPokemon.weak_against.length)];
+          const allTypes = new Set();
+          pokemonData.forEach(p => {
+            p.super_effective.forEach(type => allTypes.add(type));
+            p.weak_against.forEach(type => allTypes.add(type));
+            p.type.forEach(type => allTypes.add(type));
+          });
+          // Remove ALL weak against types for this Pokemon, not just the correct answer
+          pool = Array.from(allTypes).filter(type => !currentPokemon.weak_against.includes(type));
+        } else {
+          correctAnswer = "None";
+          pool = ["Fire", "Water", "Grass", "Electric"];
+        }
+      } else if (stat === "move") {
+        questionText = `Which move can ${currentPokemon.name} learn?`;
+        correctAnswer = currentPokemon.move[Math.floor(Math.random() * currentPokemon.move.length)];
+        const allMoves = new Set();
+        pokemonData.forEach(p => {
+          p.move.forEach(move => allMoves.add(move));
+        });
+        pool = Array.from(allMoves).filter(move => move !== correctAnswer);
+      }
+
+      pool = Array.from(new Set(pool));
+
+      document.getElementById("question-text").textContent = questionText;
+
+      // Ensure we have enough unique wrong answers
+      const availableWrongs = shuffle(pool);
+      const wrongs = [];
+      for (let i = 0; i < availableWrongs.length && wrongs.length < 3; i++) {
+        if (!wrongs.includes(availableWrongs[i]) && availableWrongs[i] !== correctAnswer) {
+          wrongs.push(availableWrongs[i]);
+        }
+      }
+      
+      // If we don't have enough unique options, fill with fallback options
+      const fallbackOptions = ["Fire", "Water", "Grass", "Electric", "Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Psychic", "Ice", "Dragon"];
+      for (let fallback of fallbackOptions) {
+        if (wrongs.length >= 3) break;
+        if (!wrongs.includes(fallback) && fallback !== correctAnswer && !pool.includes(fallback)) {
+          wrongs.push(fallback);
+        }
+      }
+
+      const answers = shuffle([correctAnswer, ...wrongs.slice(0, 3)]);
+
+      const answersGrid = document.getElementById("answers-grid");
+      answersGrid.innerHTML = "";
+      answers.forEach(ans => {
+        const btn = document.createElement("button");
+        btn.className = "answer-button";
+        btn.textContent = ans;
+        btn.onclick = () => handleBonusAnswer(ans, correctAnswer, btn);
+        answersGrid.appendChild(btn);
       });
-      pool = Array.from(allTypes).filter(type => type !== correctAnswer);
-    } else {
-      correctAnswer = "None";
-      pool = ["Fire", "Water", "Grass", "Electric"];
     }
-  } else if (stat === "weak_against") {
-    questionText = `Which type is ${currentPokemon.name} weak against?`;
-    if (currentPokemon.weak_against.length > 0) {
-      correctAnswer = currentPokemon.weak_against[Math.floor(Math.random() * currentPokemon.weak_against.length)];
-      // Get other types from all pokemon
-      const allTypes = new Set();
-      pokemonData.forEach(p => {
-        p.super_effective.forEach(type => allTypes.add(type));
-        p.weak_against.forEach(type => allTypes.add(type));
-        p.type.forEach(type => allTypes.add(type));
-      });
-      pool = Array.from(allTypes).filter(type => type !== correctAnswer);
-    } else {
-      correctAnswer = "None";
-      pool = ["Fire", "Water", "Grass", "Electric"];
-    }
-  } else if (stat === "move") {
-    questionText = `Which move can ${currentPokemon.name} learn?`;
-    correctAnswer = currentPokemon.move[Math.floor(Math.random() * currentPokemon.move.length)];
-    // Get moves from other pokemon
-    const allMoves = new Set();
-    pokemonData.forEach(p => {
-      p.move.forEach(move => allMoves.add(move));
-    });
-    pool = Array.from(allMoves).filter(move => move !== correctAnswer);
-  }
 
-  pool = Array.from(new Set(pool));
-
-  let formatted = questionText;
-  const parts = questionText.split(/\s+/);
-  if (parts.length > 3) {
-    const segments = [];
-    for (let i = 0; i < parts.length; i += 3) {
-      segments.push(parts.slice(i, i + 3).join(' '));
-    }
-    formatted = segments.join('<br>');
-  }
-  document.getElementById("question-area").innerHTML = formatted;
-
-  const wrongs = shuffle(pool).slice(0, 3);
-  const answers = shuffle([correctAnswer, ...wrongs]);
-
-  const answersDiv = document.getElementById("answers-area");
-  answersDiv.innerHTML = "";
-  answers.forEach(ans => {
-    const btn = document.createElement("button");
-    btn.textContent = ans;
-    btn.onclick = () => handleBonusAnswer(ans, correctAnswer);
-    answersDiv.appendChild(btn);
-  });
-}
-
-    function handleBonusAnswer(selected, correctAnswer) {
+    function handleBonusAnswer(selected, correctAnswer, buttonElement) {
       if (selected === correctAnswer) {
         sounds.correct();
+        buttonElement.classList.add('correct');
         bonusIndex++;
-        askNextBonusQuestion();
+        
+        setTimeout(() => {
+          askNextBonusQuestion();
+        }, 800);
       } else {
         sounds.wrong();
+        buttonElement.classList.add('wrong');
         currentStreak = 0;
         updateAllCounters();
-        document.getElementById("question-area").textContent = "Wrong! Better luck next time!";
-        setTimeout(startRound, 1500);
+        document.getElementById("question-text").textContent = "Wrong! Better luck next time!";
+        
+        setTimeout(() => {
+          startRound();
+        }, 1500);
         saveGameData();
       }
     }
@@ -2840,21 +3006,28 @@ function askNextBonusQuestion() {
       updateAllCounters();
       checkAchievements();
 
-      document.getElementById("question-area").textContent =
+      document.getElementById("question-text").textContent =
         `Congratulations! You unlocked ${isShiny ? "a shiny" : "a"} ${currentPokemon.name}!`;
 
-      setTimeout(startRound, 2000);
+      document.getElementById('answers-grid').innerHTML = '';
+
+      setTimeout(() => {
+        startRound();
+      }, 2500);
     }
 
     function updatePokedexUI() {
       const grid = document.getElementById("pokedex-grid");
       grid.innerHTML = "";
 
-      pokemonData.forEach(p => {
+      // Create all 151 Pokemon cards
+      for (let i = 1; i <= 151; i++) {
+        const p = pokemonData.find(pokemon => pokemon.id === i);
+        
         const card = document.createElement("div");
         card.className = "pokemon-card";
         
-        if (unlocked[p.id] === "shiny") {
+        if (unlocked[i] === "shiny") {
           card.classList.add("shiny-card");
         }
         
@@ -2862,101 +3035,103 @@ function askNextBonusQuestion() {
         const label = document.createElement("div");
         label.className = "label";
         
-        if (unlocked[p.id]) {
-          const shiny = unlocked[p.id] === "shiny";
-          img.src = getSpritePath(p.id, shiny);
-          label.textContent = shiny ? `${p.name} ✨` : p.name;
+        if (unlocked[i]) {
+          // Unlocked - show full color sprite
+          const shiny = unlocked[i] === "shiny";
+          img.src = getSpritePath(i, shiny);
+          img.style.filter = ''; // Remove silhouette filter
+          if (p) {
+            label.textContent = shiny ? `${p.name} ✨` : p.name;
+            card.style.cursor = "pointer";
+            card.onclick = () => showPokedexEntry(p);
+          } else {
+            label.textContent = `#${i}`;
+          }
         } else {
-          img.src = getSilhouettePath(p.id);
+          // Locked - show silhouette
+          img.src = getSpritePath(i, false);
+          img.style.filter = 'brightness(0)';
           label.textContent = "???";
+          card.style.cursor = "default";
         }
         
         card.appendChild(img);
         card.appendChild(label);
-        
-        if (unlocked[p.id]) {
-          card.style.cursor = "pointer";
-          card.onclick = () => showPokedexEntry(p);
-        }
-        
         grid.appendChild(card);
-      });
+      }
     }
 
     function showPokedexEntry(p) {
-      const roundScreen = document.getElementById("round-screen");
-      roundScreen.classList.remove("silhouette-bg");
-      roundScreen.classList.add("quiz-bg");
+      gameMode = 'pokedex';
       
-      const silEl = document.getElementById("silhouette");
+      document.getElementById('question-answers-area').classList.add('hidden');
+      
+      const pokemonImg = document.getElementById("pokemon-image");
       const shiny = unlocked[p.id] === "shiny";
-      silEl.src = getSpritePath(p.id, shiny);
-      silEl.style.imageRendering = "pixelated";
+      pokemonImg.src = getSpritePath(p.id, shiny);
+      pokemonImg.style.filter = '';
       
-      const qArea = document.getElementById("question-area");
-      qArea.innerHTML = `<strong>${p.name.toUpperCase()}</strong>${shiny ? ' ✨' : ''}<br><br>` +
-        `<span id="back-link" style="background:#cc0000;color:#fff;padding:0.2rem 0.4rem;border-radius:4px;cursor:pointer;margin-left:1rem;">Back</span>`;
-      qArea.style.fontSize = "1.4rem";
-      qArea.style.lineHeight = "1.4";
-      qArea.style.whiteSpace = "normal";
+      if (shiny) {
+        pokemonImg.classList.add('shiny');
+      } else {
+        pokemonImg.classList.remove('shiny');
+      }
       
-      setTimeout(() => {
-        const backLinkEl = document.getElementById('back-link');
-        if (backLinkEl) backLinkEl.onclick = () => exitPokedexView();
-      }, 0);
+      const pokemonDisplay = document.getElementById('pokemon-display');
+      pokemonDisplay.classList.remove('energy-burst');
       
-      const statsArea = document.getElementById("stats-area");
-statsArea.innerHTML =
-  `<strong>Height:</strong> ${p.height}<br>` +
-  `<strong>Weight:</strong> ${p.weight}<br>` +
-  `<strong>Type:</strong> ${p.type.join(", ")}<br>` +
-  `<strong>Ability:</strong> ${p.ability}<br>` +
-  `<strong>Moves:</strong> ${p.move.join(", ")}<br>` +
-  `<strong>Egg group:</strong> ${p.egg_group}<br>` +
-  `<strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}<br>` +
-  `<strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}<br>` +
-  `<strong>Pokédex #:</strong> ${p.id}`;
-      statsArea.style.display = "block";
+      const statsDisplay = document.getElementById('stats-display');
+      statsDisplay.innerHTML =
+        `<h3>${p.name.toUpperCase()}${shiny ? ' ✨' : ''}</h3>` +
+        `<strong>Height:</strong> ${p.height}<br>` +
+        `<strong>Weight:</strong> ${p.weight}<br>` +
+        `<strong>Type:</strong> ${p.type.join(", ")}<br>` +
+        `<strong>Ability:</strong> ${p.ability}<br>` +
+        `<strong>Moves:</strong> ${p.move.join(", ")}<br>` +
+        `<strong>Egg group:</strong> ${p.egg_group}<br>` +
+        `<strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}<br>` +
+        `<strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}<br>` +
+        `<strong>Pokédex #:</strong> ${p.id}`;
       
-      document.getElementById("answers-area").style.display = "none";
-      document.getElementById("back-button").style.display = "none";
+      statsDisplay.classList.remove('hidden');
+      document.getElementById('back-button').classList.remove('hidden');
     }
 
     function exitPokedexView() {
-      document.getElementById("stats-area").style.display = "none";
-      document.getElementById("back-button").style.display = "none";
-      
-      const qArea = document.getElementById("question-area");
-      qArea.style.fontSize = "1.4rem";
-      qArea.style.lineHeight = "normal";
-      qArea.style.whiteSpace = "normal";
-      qArea.style.color = "#fff";
+      document.getElementById('stats-display').classList.add('hidden');
+      document.getElementById('back-button').classList.add('hidden');
+      document.getElementById('question-answers-area').classList.remove('hidden');
       
       startRound();
     }
 
+    // Event listeners
+    document.getElementById('back-button').addEventListener('click', exitPokedexView);
+
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
-      const answers = document.querySelectorAll('.answers-area button');
-      if (answers.length > 0) {
-        switch(e.key) {
-          case '1':
-            if (answers[0]) answers[0].click();
-            break;
-          case '2':
-            if (answers[1]) answers[1].click();
-            break;
-          case '3':
-            if (answers[2]) answers[2].click();
-            break;
-          case '4':
-            if (answers[3]) answers[3].click();
-            break;
-          case 'Escape':
-            if (document.getElementById('stats-area').style.display === 'block') {
-              exitPokedexView();
-            }
-            break;
+      if (gameMode === 'pokedex' && e.key === 'Escape') {
+        exitPokedexView();
+        return;
+      }
+      
+      if (gameMode === 'main' || gameMode === 'bonus') {
+        const answers = document.querySelectorAll('.answer-button');
+        if (answers.length > 0) {
+          switch(e.key) {
+            case '1':
+              if (answers[0]) answers[0].click();
+              break;
+            case '2':
+              if (answers[1]) answers[1].click();
+              break;
+            case '3':
+              if (answers[2]) answers[2].click();
+              break;
+            case '4':
+              if (answers[3]) answers[3].click();
+              break;
+          }
         }
       }
     });
