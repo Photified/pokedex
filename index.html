@@ -10,15 +10,20 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevent body from scrolling */
+}
+
 body { 
-  margin: 0; 
-  padding: 0; 
   font-family: 'Arial', sans-serif; 
   background: linear-gradient(135deg, #87CEEB 0%, #4682B4 100%);
   color: #000; 
-  min-height: 100vh;
-  overflow-x: hidden;
   user-select: none;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Loading screen */
@@ -78,6 +83,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .stat-item {
@@ -101,7 +107,8 @@ body {
 .game-container {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 60px);
+  flex: 1; /* Allow container to fill remaining vertical space */
+  min-height: 0; /* Allow shrinking */
   padding: 1rem;
   gap: 1rem;
 }
@@ -110,24 +117,25 @@ body {
 .pokedex-device {
   background: linear-gradient(145deg, #dc143c, #b22222);
   border-radius: 20px;
-  padding: 1.5rem;
+  padding: 1rem;
+  padding-top: 4.5rem; 
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   border: 3px solid #8b0000;
   position: relative;
-  max-width: 400px;
   width: 100%;
-  margin: 0 auto;
-  flex-shrink: 0;
-  min-height: 450px;
+  display: flex; 
+  flex-direction: column;
+  flex: 1; 
+  min-height: 0;
 }
 
 .pokedex-device::before {
   content: '';
   position: absolute;
-  top: 1rem;
+  top: 0.75rem; 
   left: 1rem;
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   background: radial-gradient(circle, #00ffff 30%, #0080ff  70%);
   border-radius: 50%;
   border: 4px solid white;
@@ -136,7 +144,7 @@ body {
 
 .pokedex-lights {
   position: absolute;
-  top: 1rem;
+  top: 0.75rem; 
   right: 1rem;
   display: flex;
   gap: 0.5rem;
@@ -156,41 +164,42 @@ body {
 .screen-container {
   background: #f0f0f0;
   border-radius: 15px;
-  padding: 1.5rem;
-  margin-top: 4rem;
+  padding: 1rem;
   border: 3px solid #333;
   position: relative;
-  min-height: 320px;
+  flex: 1; 
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevents animations from spilling out */
 }
-
-
 
 .pokemon-display {
   background: radial-gradient(circle, #ffffff 20%, #87ceeb 80%);
   border-radius: 10px;
-  padding: 1rem; /* Reduced padding to give image more space */
   text-align: center;
-  min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  flex: 1; 
+  min-height: 0;
 }
 
 .pokemon-display.energy-burst {
   background: radial-gradient(circle, #ffffff 10%, #ffff00 30%, #ff6600 60%, #ff0000 100%);
-  animation: energyPulse 2s ease-in-out;
+  animation: energyPulse 1s ease-in-out; /* Shortened duration */
 }
 
 @keyframes energyPulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+  50% { transform: scale(1.01); } /* Reduced scale effect */
 }
 
 .pokemon-image {
-  width: 100%; /* Fills the container's width */
-  height: 100%; /* Fills the container's height */
+  width: 90%;
+  height: 90%;
   object-fit: contain;
   filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
   transition: all 0.3s ease;
@@ -210,8 +219,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  flex-shrink: 0;
 }
 
 .red-button {
@@ -236,11 +246,11 @@ body {
 
 /* Question and answers area */
 .question-answers-area {
-  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  min-height: 300px;
+  flex-shrink: 0;
+  min-height: 240px; /* Prevents collapsing and keeps layout stable */
 }
 
 .question-text {
@@ -251,7 +261,6 @@ body {
   font-size: 1.2rem;
   font-weight: bold;
   color: #333;
-  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -260,9 +269,8 @@ body {
 
 .answers-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Changed to a 2x2 grid */
+  grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
-  flex: 1;
 }
 
 .answer-button {
@@ -270,13 +278,13 @@ body {
   color: white;
   border: none;
   border-radius: 15px;
-  padding: 0.5rem 1rem; /* Reduced vertical padding */
+  padding: 1rem;
   font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  min-height: 30px; /* Reduced height */
+  min-height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -324,6 +332,7 @@ body {
   border-radius: 15px;
   scrollbar-width: thin;
   scrollbar-color: #4ecdc4 transparent;
+  flex-shrink: 0; 
 }
 
 .pokedex-grid::-webkit-scrollbar {
@@ -395,6 +404,12 @@ body {
   font-size: 0.9rem;
   line-height: 1.6;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  position: absolute; 
+  top: 5rem;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  overflow-y: auto;
 }
 
 .back-button {
@@ -407,8 +422,11 @@ body {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 1rem;
-  width: 100%;
+  width: calc(100% - 2rem);
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 1;
 }
 
 .back-button:hover {
@@ -478,21 +496,12 @@ body {
 @media (max-width: 480px) {
   .game-container {
     padding: 0.5rem;
+    gap: 0.5rem;
   }
   
   .stat-item {
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
-  }
-  
-  .pokemon-display {
-    min-height: 200px;
-    padding: 1.5rem;
-  }
-  
-  .pokemon-image {
-    width: 100%;
-    height: 100%;
   }
   
   .question-text {
@@ -502,8 +511,7 @@ body {
   
   .answer-button {
     font-size: 1rem;
-    padding: 0.4rem 0.8rem; /* Reduced vertical padding */
-    min-height: 25px; /* Reduced height */
+    padding: 0.8rem;
   }
 }
 
@@ -2452,10 +2460,6 @@ body {
     // Utility functions
     function padId(num) { return String(num).padStart(3, "0"); }
     function getSpritePath(id, shiny=false) { 
-      // NOTE: For this to work, you need a 'sprites' folder with images named like:
-      // pokemon_001.png, pokemon_001_shiny.png, pokemon_001_silhouette.png, etc.
-      const padded = padId(id); 
-      // Using a placeholder service if local sprites aren't available
       const baseUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
       if (shiny) {
           return `${baseUrl}shiny/${id}.png`;
@@ -2463,7 +2467,6 @@ body {
       return `${baseUrl}${id}.png`;
     }
     function getSilhouettePath(id) { 
-        // For silhouettes, we'll just use the normal sprite and apply a heavy brightness filter in JS
         return getSpritePath(id, false);
     }
     function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
@@ -2555,7 +2558,7 @@ body {
         if (!soundEnabled) return;
         try {
           const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          const frequencies = [1047, 1319, 1568, 2093]; // High pitched magical sound
+          const frequencies = [1047, 1319, 1568, 2093];
           
           frequencies.forEach((freq, i) => {
             const oscillator = audioContext.createOscillator();
@@ -2601,22 +2604,19 @@ body {
     // Achievement system
     function checkAchievements() {
       const unlockedCount = Object.keys(unlocked).length;
-      const starterIds = [1, 4, 7]; // Bulbasaur, Charmander, Squirtle
+      const starterIds = [1, 4, 7];
       const hasAllStarters = starterIds.every(id => unlocked[id]);
       
-      // First catch achievement
       if (unlockedCount === 1 && !gameAchievements.firstCatch) {
         gameAchievements.firstCatch = true;
         showAchievement("First Steps", "Caught your first Pokémon!");
       }
       
-      // Starter collection achievement
       if (hasAllStarters && !gameAchievements.starterMaster) {
         gameAchievements.starterMaster = true;
         showAchievement("Starter Master", "Collected all three starter Pokémon!");
       }
       
-      // Milestone achievements
       const milestones = [10, 25, 50, 100, 151];
       milestones.forEach(milestone => {
         if (unlockedCount >= milestone && !gameAchievements[`milestone_${milestone}`]) {
@@ -2625,7 +2625,6 @@ body {
         }
       });
       
-      // Streak achievements
       if (currentStreak >= 5 && !gameAchievements.streak5) {
         gameAchievements.streak5 = true;
         showAchievement("Hot Streak", "5 correct answers in a row!");
@@ -2636,7 +2635,6 @@ body {
         showAchievement("On Fire!", "10 correct answers in a row!");
       }
       
-      // Shiny achievements
       if (totalShinyCount >= 1 && !gameAchievements.firstShiny) {
         gameAchievements.firstShiny = true;
         showAchievement("Shiny Hunter", "Caught your first shiny Pokémon!");
@@ -2665,10 +2663,7 @@ body {
       unlocked = JSON.parse(localStorage.getItem("unlockedPokemon")) || {};
       currentStreak = parseInt(localStorage.getItem("pokemonStreak")) || 0;
       gameAchievements = JSON.parse(localStorage.getItem("pokemonAchievements")) || {};
-      
-      // Count shinies
       totalShinyCount = Object.values(unlocked).filter(type => type === "shiny").length;
-      
       updateAllCounters();
     }
 
@@ -2684,7 +2679,6 @@ body {
       document.getElementById("pokedex-counter").textContent = `${unlockedCount} / 151`;
       document.getElementById("streak-counter").textContent = `${currentStreak}`;
       document.getElementById("shiny-counter").textContent = `${totalShinyCount}`;
-
       const achievementsUnlocked = Object.keys(gameAchievements || {}).length;
       document.getElementById("achievement-counter").textContent = `${achievementsUnlocked}`;
     }
@@ -2693,7 +2687,6 @@ body {
     function startRound() {
       gameMode = 'main';
       
-      // Hide loading screen if still visible
       const loadingScreen = document.getElementById('loading-screen');
       if (loadingScreen.style.display !== 'none') {
         loadingScreen.style.opacity = '0';
@@ -2702,27 +2695,21 @@ body {
         }, 500);
       }
 
-      // Reset UI state
       document.getElementById('stats-display').classList.add('hidden');
       document.getElementById('back-button').classList.add('hidden');
       document.getElementById('question-answers-area').classList.remove('hidden');
       document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
-      
-      const pokemonDisplay = document.getElementById('pokemon-display');
-      pokemonDisplay.classList.remove('energy-burst');
+      document.getElementById('pokemon-display').classList.remove('energy-burst');
 
-      // Team Rocket encounter (10% chance, not twice in a row)
       if (!lastRocket && Math.random() < 0.10) {
         lastRocket = true;
         handleTeamRocket();
         return;
-      } else {
-        lastRocket = false;
       }
+      lastRocket = false;
 
       const lockedList = pokemonData.filter(p => !(p.id in unlocked));
       if (lockedList.length === 0) {
-        // Game completed!
         document.getElementById("question-text").textContent = "Congratulations! You've caught them all!";
         showAchievement("Pokémon Master", "Completed the entire Pokédex!");
         document.getElementById('answers-grid').innerHTML = '';
@@ -2780,22 +2767,17 @@ body {
       gameMode = 'rocket';
       sounds.rocket();
       
-      const unlockedCount = Object.keys(unlocked).length;
-      if (unlockedCount < 5) {
+      if (Object.keys(unlocked).length < 5) {
         startRound();
         return;
       }
 
       document.getElementById('pokedex-device').classList.add('team-rocket-mode');
-      
       const pokemonImg = document.getElementById("pokemon-image");
-      pokemonImg.src = "sprites/pokemon_000.png"; 
+      pokemonImg.src = "https://placehold.co/200x200/000000/FFFFFF?text=R";
       pokemonImg.style.filter = '';
       pokemonImg.classList.remove('shiny');
-
-      // Hide answers but keep the question area visible
-      const answersGrid = document.getElementById('answers-grid');
-      answersGrid.innerHTML = '';
+      document.getElementById('answers-grid').innerHTML = '';
       
       const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
       let message;
@@ -2809,8 +2791,6 @@ body {
         updatePokedexUI();
         updateAllCounters();
         message = `Team Rocket stole your ${stolenName}!`;
-        
-        // Add some particles for the theft
         createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
       } else {
         message = "Team Rocket tried to steal a Pokémon, but failed!";
@@ -2819,7 +2799,6 @@ body {
       document.getElementById("question-text").textContent = message;
 
       setTimeout(() => {
-        // Reset everything properly
         document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
         startRound();
       }, 4000);
@@ -2827,32 +2806,23 @@ body {
 
     function startBonusRound() {
       gameMode = 'bonus';
+      document.getElementById('pokemon-display').classList.add('energy-burst');
       
-      const pokemonDisplay = document.getElementById('pokemon-display');
-      pokemonDisplay.classList.add('energy-burst');
-      
-      // Higher shiny chance for streaks
       let shinyChance = 0.10;
       if (currentStreak >= 5) shinyChance = 0.15;
       if (currentStreak >= 10) shinyChance = 0.25;
-      
       currentIsShinyRound = Math.random() < shinyChance;
       
       const pokemonImg = document.getElementById("pokemon-image");
       pokemonImg.src = getSpritePath(currentPokemon.id, currentIsShinyRound);
       pokemonImg.style.filter = '';
-      
-      if (currentIsShinyRound) {
-        pokemonImg.classList.add('shiny');
-      }
+      if (currentIsShinyRound) pokemonImg.classList.add('shiny');
       
       const stats = ["height","weight","ability","id","egg_group","type","super_effective","weak_against","move"];
       bonusQuestions = shuffle(stats).slice(0,3);
       bonusIndex = 0;
       
-      setTimeout(() => {
-        askNextBonusQuestion();
-      }, 1000);
+      setTimeout(askNextBonusQuestion, 1000);
     }
 
     function askNextBonusQuestion() {
@@ -2892,13 +2862,7 @@ body {
         questionText = `Which type is ${currentPokemon.name} super effective against?`;
         if (currentPokemon.super_effective.length > 0) {
           correctAnswer = currentPokemon.super_effective[Math.floor(Math.random() * currentPokemon.super_effective.length)];
-          const allTypes = new Set();
-          pokemonData.forEach(p => {
-            p.super_effective.forEach(type => allTypes.add(type));
-            p.weak_against.forEach(type => allTypes.add(type));
-            p.type.forEach(type => allTypes.add(type));
-          });
-          // Remove ALL super effective types for this Pokemon, not just the correct answer
+          const allTypes = new Set(pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]));
           pool = Array.from(allTypes).filter(type => !currentPokemon.super_effective.includes(type));
         } else {
           correctAnswer = "None";
@@ -2908,13 +2872,7 @@ body {
         questionText = `Which type is ${currentPokemon.name} weak against?`;
         if (currentPokemon.weak_against.length > 0) {
           correctAnswer = currentPokemon.weak_against[Math.floor(Math.random() * currentPokemon.weak_against.length)];
-          const allTypes = new Set();
-          pokemonData.forEach(p => {
-            p.super_effective.forEach(type => allTypes.add(type));
-            p.weak_against.forEach(type => allTypes.add(type));
-            p.type.forEach(type => allTypes.add(type));
-          });
-          // Remove ALL weak against types for this Pokemon, not just the correct answer
+          const allTypes = new Set(pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]));
           pool = Array.from(allTypes).filter(type => !currentPokemon.weak_against.includes(type));
         } else {
           correctAnswer = "None";
@@ -2923,37 +2881,17 @@ body {
       } else if (stat === "move") {
         questionText = `Which move can ${currentPokemon.name} learn?`;
         correctAnswer = currentPokemon.move[Math.floor(Math.random() * currentPokemon.move.length)];
-        const allMoves = new Set();
-        pokemonData.forEach(p => {
-          p.move.forEach(move => allMoves.add(move));
-        });
+        const allMoves = new Set(pokemonData.flatMap(p => p.move));
         pool = Array.from(allMoves).filter(move => move !== correctAnswer);
       }
 
       pool = Array.from(new Set(pool));
-
       document.getElementById("question-text").textContent = questionText;
 
-      // Ensure we have enough unique wrong answers
-      const availableWrongs = shuffle(pool);
-      const wrongs = [];
-      for (let i = 0; i < availableWrongs.length && wrongs.length < 3; i++) {
-        if (!wrongs.includes(availableWrongs[i]) && availableWrongs[i] !== correctAnswer) {
-          wrongs.push(availableWrongs[i]);
-        }
-      }
+      const availableWrongs = shuffle(pool.filter(p => p !== correctAnswer));
+      const wrongs = availableWrongs.slice(0, 3);
       
-      // If we don't have enough unique options, fill with fallback options
-      const fallbackOptions = ["Fire", "Water", "Grass", "Electric", "Normal", "Fighting", "Flying", "Poison", "Ground", "Rock", "Bug", "Ghost", "Psychic", "Ice", "Dragon"];
-      for (let fallback of fallbackOptions) {
-        if (wrongs.length >= 3) break;
-        if (!wrongs.includes(fallback) && fallback !== correctAnswer && !pool.includes(fallback)) {
-          wrongs.push(fallback);
-        }
-      }
-
-      const answers = shuffle([correctAnswer, ...wrongs.slice(0, 3)]);
-
+      const answers = shuffle([correctAnswer, ...wrongs]);
       const answersGrid = document.getElementById("answers-grid");
       answersGrid.innerHTML = "";
       answers.forEach(ans => {
@@ -2970,20 +2908,14 @@ body {
         sounds.correct();
         buttonElement.classList.add('correct');
         bonusIndex++;
-        
-        setTimeout(() => {
-          askNextBonusQuestion();
-        }, 800);
+        setTimeout(askNextBonusQuestion, 800);
       } else {
         sounds.wrong();
         buttonElement.classList.add('wrong');
         currentStreak = 0;
         updateAllCounters();
         document.getElementById("question-text").textContent = "Wrong! Better luck next time!";
-        
-        setTimeout(() => {
-          startRound();
-        }, 1500);
+        setTimeout(startRound, 1500);
         saveGameData();
       }
     }
@@ -3008,38 +2940,28 @@ body {
 
       document.getElementById("question-text").textContent =
         `Congratulations! You unlocked ${isShiny ? "a shiny" : "a"} ${currentPokemon.name}!`;
-
       document.getElementById('answers-grid').innerHTML = '';
-
-      setTimeout(() => {
-        startRound();
-      }, 2500);
+      setTimeout(startRound, 2500);
     }
 
     function updatePokedexUI() {
       const grid = document.getElementById("pokedex-grid");
       grid.innerHTML = "";
 
-      // Create all 151 Pokemon cards
       for (let i = 1; i <= 151; i++) {
         const p = pokemonData.find(pokemon => pokemon.id === i);
-        
         const card = document.createElement("div");
         card.className = "pokemon-card";
-        
-        if (unlocked[i] === "shiny") {
-          card.classList.add("shiny-card");
-        }
+        if (unlocked[i] === "shiny") card.classList.add("shiny-card");
         
         const img = document.createElement("img");
         const label = document.createElement("div");
         label.className = "label";
         
         if (unlocked[i]) {
-          // Unlocked - show full color sprite
           const shiny = unlocked[i] === "shiny";
           img.src = getSpritePath(i, shiny);
-          img.style.filter = ''; // Remove silhouette filter
+          img.style.filter = '';
           if (p) {
             label.textContent = shiny ? `${p.name} ✨` : p.name;
             card.style.cursor = "pointer";
@@ -3048,7 +2970,6 @@ body {
             label.textContent = `#${i}`;
           }
         } else {
-          // Locked - show silhouette
           img.src = getSpritePath(i, false);
           img.style.filter = 'brightness(0)';
           label.textContent = "???";
@@ -3063,22 +2984,15 @@ body {
 
     function showPokedexEntry(p) {
       gameMode = 'pokedex';
-      
       document.getElementById('question-answers-area').classList.add('hidden');
       
       const pokemonImg = document.getElementById("pokemon-image");
       const shiny = unlocked[p.id] === "shiny";
       pokemonImg.src = getSpritePath(p.id, shiny);
       pokemonImg.style.filter = '';
+      pokemonImg.classList.toggle('shiny', shiny);
       
-      if (shiny) {
-        pokemonImg.classList.add('shiny');
-      } else {
-        pokemonImg.classList.remove('shiny');
-      }
-      
-      const pokemonDisplay = document.getElementById('pokemon-display');
-      pokemonDisplay.classList.remove('energy-burst');
+      document.getElementById('pokemon-display').classList.remove('energy-burst');
       
       const statsDisplay = document.getElementById('stats-display');
       statsDisplay.innerHTML =
@@ -3101,14 +3015,12 @@ body {
       document.getElementById('stats-display').classList.add('hidden');
       document.getElementById('back-button').classList.add('hidden');
       document.getElementById('question-answers-area').classList.remove('hidden');
-      
       startRound();
     }
 
     // Event listeners
     document.getElementById('back-button').addEventListener('click', exitPokedexView);
 
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (gameMode === 'pokedex' && e.key === 'Escape') {
         exitPokedexView();
@@ -3118,38 +3030,25 @@ body {
       if (gameMode === 'main' || gameMode === 'bonus') {
         const answers = document.querySelectorAll('.answer-button');
         if (answers.length > 0) {
-          switch(e.key) {
-            case '1':
-              if (answers[0]) answers[0].click();
-              break;
-            case '2':
-              if (answers[1]) answers[1].click();
-              break;
-            case '3':
-              if (answers[2]) answers[2].click();
-              break;
-            case '4':
-              if (answers[3]) answers[3].click();
-              break;
+          const keyMap = {'1': 0, '2': 1, '3': 2, '4': 3};
+          if (e.key in keyMap && answers[keyMap[e.key]]) {
+            answers[keyMap[e.key]].click();
           }
         }
       }
     });
 
-    // Initialize game
     function initGame() {
-      // Show loading screen
       document.getElementById('loading-screen').style.display = 'flex';
-      
       setTimeout(() => {
         loadGameData();
         updatePokedexUI();
         startRound();
-      }, 1500); // Simulate loading time
+      }, 1500);
     }
 
-    // Start the game
     initGame();
   </script>
 </body>
 </html>
+``
