@@ -395,24 +395,31 @@ body {
   50% { box-shadow: 0 4px 20px rgba(255,215,0,0.6); }
 }
 
-/* Stats display */
-.stats-display {
-  background: rgba(255,255,255,0.95);
-  padding: 1.5rem;
+/* NEW: Pokedex Info Display Area */
+#pokedex-info-display {
+  background: rgba(255,255,255,0.9);
   border-radius: 15px;
-  margin-top: 1.5rem;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  position: absolute; 
-  top: 5rem;
-  left: 1rem;
-  right: 1rem;
-  bottom: 1rem;
-  overflow-y: auto;
+  padding: 1rem;
+  flex-shrink: 0;
+  min-height: 240px; /* Match question area height to keep layout stable */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
-.back-button {
+#stats-display {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-y: auto; /* Allow scrolling for long stat lists */
+  flex-grow: 1;
+}
+
+#stats-display h3 {
+  margin-top: 0;
+  text-align: center;
+}
+
+#back-button {
   background: linear-gradient(145deg, #ff6b6b, #ee5a52);
   color: white;
   border: none;
@@ -422,14 +429,11 @@ body {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
-  width: calc(100% - 2rem);
-  position: absolute;
-  bottom: 1rem;
-  left: 1rem;
-  z-index: 1;
+  margin-top: 1rem;
+  width: 100%;
 }
 
-.back-button:hover {
+#back-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
@@ -588,16 +592,18 @@ body {
           </div>
         </div>
       </div>
-
-      <!-- Stats display for Pokédex entries -->
-      <div id="stats-display" class="stats-display hidden"></div>
-      <button id="back-button" class="back-button hidden">Back to Game</button>
     </div>
 
     <!-- Question and Answers Area -->
     <div class="question-answers-area" id="question-answers-area">
       <div class="question-text" id="question-text">Loading...</div>
       <div class="answers-grid" id="answers-grid"></div>
+    </div>
+
+    <!-- NEW: Pokedex Info Display Area -->
+    <div id="pokedex-info-display" class="hidden">
+        <div id="stats-display"></div>
+        <button id="back-button">Back to Game</button>
     </div>
 
     <!-- Pokédex Grid -->
@@ -2695,8 +2701,7 @@ body {
         }, 500);
       }
 
-      document.getElementById('stats-display').classList.add('hidden');
-      document.getElementById('back-button').classList.add('hidden');
+      document.getElementById('pokedex-info-display').classList.add('hidden');
       document.getElementById('question-answers-area').classList.remove('hidden');
       document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
       document.getElementById('pokemon-display').classList.remove('energy-burst');
@@ -2985,6 +2990,7 @@ body {
     function showPokedexEntry(p) {
       gameMode = 'pokedex';
       document.getElementById('question-answers-area').classList.add('hidden');
+      document.getElementById('pokedex-info-display').classList.remove('hidden');
       
       const pokemonImg = document.getElementById("pokemon-image");
       const shiny = unlocked[p.id] === "shiny";
@@ -3001,19 +3007,15 @@ body {
         `<strong>Weight:</strong> ${p.weight}<br>` +
         `<strong>Type:</strong> ${p.type.join(", ")}<br>` +
         `<strong>Ability:</strong> ${p.ability}<br>` +
-        `<strong>Moves:</strong> ${p.move.join(", ")}<br>` +
+        `<strong>Moves:</strong> ${p.move.slice(0, 5).join(", ")}...<br>` +
         `<strong>Egg group:</strong> ${p.egg_group}<br>` +
         `<strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}<br>` +
         `<strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}<br>` +
         `<strong>Pokédex #:</strong> ${p.id}`;
-      
-      statsDisplay.classList.remove('hidden');
-      document.getElementById('back-button').classList.remove('hidden');
     }
 
     function exitPokedexView() {
-      document.getElementById('stats-display').classList.add('hidden');
-      document.getElementById('back-button').classList.add('hidden');
+      document.getElementById('pokedex-info-display').classList.add('hidden');
       document.getElementById('question-answers-area').classList.remove('hidden');
       startRound();
     }
@@ -3051,4 +3053,3 @@ body {
   </script>
 </body>
 </html>
-``
