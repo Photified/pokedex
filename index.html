@@ -419,7 +419,6 @@ body {
 #stats-display {
   font-size: 0.8rem;
   line-height: 1.5;
-  overflow-y: auto; 
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -557,8 +556,10 @@ body {
 /* STYLES FOR ACHIEVEMENT GRID */
 #achievement-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Two columns */
+    grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
+    overflow-y: auto; /* Make the grid scrollable */
+    flex-grow: 1; /* Allow grid to take space */
 }
 .achievement-entry {
   display: flex;
@@ -595,6 +596,8 @@ body {
   gap: 10px;
   justify-content: center;
   padding: 1rem 0;
+  overflow-y: auto;
+  flex-grow: 1;
 }
 .shiny-grid-item {
   background: rgba(0,0,0,0.05);
@@ -620,6 +623,8 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     padding: 0.5rem 0;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 .item-grid-entry {
     background: white;
@@ -2894,7 +2899,7 @@ body {
       document.getElementById("achievement-counter").textContent = `${totalAchievements}`;
     }
 
-    function startRound() {
+    function startRound(isResume = false) {
       gameMode = 'main';
       document.querySelector('.game-container').classList.remove('info-mode-active');
       document.getElementById('pokedex-device').classList.remove('hidden');
@@ -2908,21 +2913,23 @@ body {
       document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
       document.getElementById('pokemon-display').classList.remove('energy-burst');
       
-      if (!lastRocket && Math.random() < 0.10) {
-          lastRocket = true;
-          handleTeamRocket();
-          return;
-      }
-      lastRocket = false;
+      if (!isResume) {
+        if (!lastRocket && Math.random() < 0.10) {
+            lastRocket = true;
+            handleTeamRocket();
+            return;
+        }
+        lastRocket = false;
 
-      const lockedList = pokemonData.filter(p => !(p.id in unlocked));
-      if (lockedList.length === 0) {
-          document.getElementById("question-text").textContent = "Congratulations! You've caught them all!";
-          if(!gameAchievements.milestone_151) checkAllAchievements();
-          document.getElementById('answers-grid').innerHTML = '';
-          return;
+        const lockedList = pokemonData.filter(p => !(p.id in unlocked));
+        if (lockedList.length === 0) {
+            document.getElementById("question-text").textContent = "Congratulations! You've caught them all!";
+            if(!gameAchievements.milestone_151) checkAllAchievements();
+            document.getElementById('answers-grid').innerHTML = '';
+            return;
+        }
+        currentPokemon = lockedList[Math.floor(Math.random() * lockedList.length)];
       }
-      currentPokemon = lockedList[Math.floor(Math.random() * lockedList.length)];
 
       const pokemonImg = document.getElementById("pokemon-image");
       pokemonImg.src = getSilhouettePath(currentPokemon.id);
@@ -2932,9 +2939,11 @@ body {
       
       document.getElementById("question-text").textContent = "Who's that Pokémon?";
       
-      const otherNames = shuffle(pokemonData.filter(p => p.id !== currentPokemon.id)).slice(0,3).map(p => p.name);
-      const options = shuffle([currentPokemon.name, ...otherNames]);
-      currentOptions = [...options];
+      if (!isResume) {
+        const otherNames = shuffle(pokemonData.filter(p => p.id !== currentPokemon.id)).slice(0,3).map(p => p.name);
+        const options = shuffle([currentPokemon.name, ...otherNames]);
+        currentOptions = [...options];
+      }
       
       const answersGrid = document.getElementById("answers-grid");
       answersGrid.innerHTML = "";
@@ -2956,7 +2965,7 @@ body {
         checkStreakAchievements(currentStreak);
         pokeyen += 10; 
         updateAllCounters();
-        document.getElementById("question-text").textContent = "Correct! Catch Phase starting...";
+        document.getElementById("question-text").textContent = "Correct! +¥10. Catch Phase starting...";
         
         setTimeout(() => {
           startBonusRound();
@@ -3246,7 +3255,24 @@ body {
         document.getElementById('pokedex-grid').classList.remove('hidden');
         document.getElementById('question-answers-area').classList.remove('hidden');
         document.getElementById('pokedex-info-display').classList.add('hidden');
-        startRound(true); // Call startRound in resume mode
+        
+        // Redraw the round using the stored currentPokemon and currentOptions
+        const pokemonImg = document.getElementById("pokemon-image");
+        pokemonImg.src = getSilhouettePath(currentPokemon.id);
+        pokemonImg.style.filter = 'brightness(0) drop-shadow(2px 2px 4px rgba(0,0,0,0.3))';
+        pokemonImg.classList.remove('shiny');
+        
+        document.getElementById("question-text").textContent = "Who's that Pokémon?";
+        
+        const answersGrid = document.getElementById("answers-grid");
+        answersGrid.innerHTML = "";
+        currentOptions.forEach(name => {
+            const btn = document.createElement("button");
+            btn.className = "answer-button";
+            btn.textContent = name;
+            btn.onclick = () => handleGuess(name, btn);
+            answersGrid.appendChild(btn);
+        });
     }
 
     function exitPokedexView() {
@@ -3504,3 +3530,4 @@ body {
   </script>
 </body>
 </html>
+}
