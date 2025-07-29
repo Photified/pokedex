@@ -423,15 +423,12 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden; /* Hide overflow here */
 }
 
-/* NEW: 2-column layout for Pokédex entry stats */
-.stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem 1.5rem; /* row-gap column-gap */
-    text-align: left;
-    overflow-y: auto;
+/* The individual content grids are now responsible for scrolling */
+#achievement-grid, #shiny-grid, #item-display-grid, .stats-grid {
+    overflow-y: auto; /* Make the grid itself the scrollable element */
     flex-grow: 1;
 }
 
@@ -441,6 +438,15 @@ body {
   text-align: center;
   flex-shrink: 0;
 }
+
+/* 2-column layout for Pokédex entry stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1.5rem; /* row-gap column-gap */
+    text-align: left;
+}
+
 
 #back-button {
   background: linear-gradient(145deg, #ff6b6b, #ee5a52);
@@ -558,8 +564,6 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.5rem;
-    overflow-y: auto; /* Make the grid scrollable */
-    flex-grow: 1; /* Allow grid to take space */
 }
 .achievement-entry {
   display: flex;
@@ -596,8 +600,6 @@ body {
   gap: 10px;
   justify-content: center;
   padding: 1rem 0;
-  overflow-y: auto;
-  flex-grow: 1;
 }
 .shiny-grid-item {
   background: rgba(0,0,0,0.05);
@@ -623,8 +625,6 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
     padding: 0.5rem 0;
-    overflow-y: auto;
-    flex-grow: 1;
 }
 .item-grid-entry {
     background: white;
@@ -2606,7 +2606,7 @@ body {
     const pokemonData = JSON.parse(document.getElementById("pokedex-data").textContent.trim());
     let unlocked = {};
     let currentPokemon = null;
-    let currentOptions = [];
+    let currentOptions = []; // Stores the current answer options
     let bonusQuestions = [];
     let bonusIndex = 0;
     let lastRocket = false;
@@ -2616,7 +2616,7 @@ body {
     let streakAchievementsThisRun = {};
     let soundEnabled = true;
     let gameMode = 'initial';
-    let isMenuOpen = false; 
+    let isMenuOpen = false; // Flag for when any menu/info screen is open
 
     let pokeyen = 0;
     let bag = {};
@@ -3530,4 +3530,3 @@ body {
   </script>
 </body>
 </html>
-
