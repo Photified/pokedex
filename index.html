@@ -366,8 +366,7 @@ body {
 }
 
 .pokemon-card {
-  flex: 0 0 auto;
-  width: 80px;
+  flex: 0 0 80px;
   text-align: center;
   background: rgba(255,255,255,0.9);
   border-radius: 10px;
@@ -413,19 +412,35 @@ body {
   border-radius: 15px;
   padding: 1rem;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 #stats-display {
   font-size: 0.8rem;
   line-height: 1.5;
-  overflow-y: auto; /* Allow scrolling for long stat lists */
+  overflow-y: auto; 
   flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* NEW: 2-column layout for Pokédex entry stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1.5rem; /* row-gap column-gap */
+    text-align: left;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 
 #stats-display h3 {
   margin-top: 0;
   margin-bottom: 1rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 #back-button {
@@ -530,12 +545,12 @@ body {
 }
 
 /* CSS for Clickable Views */
-#achievements-button, #shinies-button {
+#achievements-button, #shinies-button, #shop-button, #bag-button {
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
-#achievements-button:hover, #shinies-button:hover {
+#achievements-button:hover, #shinies-button:hover, #shop-button:hover, #bag-button:hover {
   background: rgba(255,255,255,0.2);
 }
 
@@ -599,49 +614,79 @@ body {
   font-weight: bold;
 }
 
+/* Styles for vertical Shop and Bag */
+#item-display-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 0.5rem 0;
+}
+.item-grid-entry {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.2s ease;
+}
+.item-grid-entry.can-buy:hover, .item-grid-entry.can-use:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+.item-grid-entry.can-use { cursor: pointer; }
+.item-grid-entry.cannot-use { cursor: default; opacity: 0.7; }
+
+.item-grid-entry img { width: 50px; height: 50px; margin: 0 auto 0.5rem; }
+.item-grid-entry h4 { margin: 0 0 0.5rem 0; font-size: 0.9rem; }
+.item-grid-entry p { margin: 0 0 0.8rem 0; font-size: 0.75rem; color: #555; flex-grow: 1; }
+.item-grid-entry .price, .item-grid-entry .item-count { font-weight: bold; color: #333; font-size: 1rem; margin-bottom: 0.5rem; }
+.item-grid-entry .buy-button {
+    background: linear-gradient(145deg, #4ecdc4, #44a08d);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    width: 100%;
+}
+.item-grid-entry .buy-button:disabled { background: #aaa; cursor: not-allowed; }
+
+/* Style to activate full-screen info mode */
+.game-container.info-mode-active {
+    padding: 0; /* Remove padding for full-screen feel */
+}
+.game-container.info-mode-active #bottom-content-area {
+    position: static; /* Let it participate in the flex flow */
+    flex-grow: 1; /* Allow it to take all available space */
+    min-height: 0;
+}
+.game-container.info-mode-active #pokedex-info-display {
+    position: static;
+    height: 100%; /* Fill its new parent */
+}
+
+
 /* Responsive adjustments */
 @media (max-width: 480px) {
-  .game-container {
-    padding: 0.5rem;
-    gap: 0.5rem;
-  }
-  
-  .stat-item {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
-  }
-  
-  .question-text {
-    font-size: 1rem;
-    padding: 0.8rem;
-  }
-  
-  .answer-button {
-    font-size: 1rem;
-    padding: 0.8rem;
-  }
-
-  /* Make achievement grid single column on small screens */
-  #achievement-grid {
-    grid-template-columns: 1fr;
-  }
+  .game-container:not(.info-mode-active) { padding: 0.5rem; gap: 0.5rem; }
+  .stat-item { font-size: 0.7rem; padding: 0.2rem 0.4rem; }
+  .question-text { font-size: 1rem; padding: 0.8rem; }
+  .answer-button { font-size: 1rem; padding: 0.8rem; }
+  #achievement-grid { grid-template-columns: 1fr; }
+  #item-display-grid { grid-template-columns: 1fr; }
 }
 
 /* Hide elements initially */
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
 /* Fade transitions */
-.fade-out {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.fade-in {
-  opacity: 1;
-  transition: opacity 0.3s ease;
-}
+.fade-out { opacity: 0; transition: opacity 0.3s ease; }
+.fade-in { opacity: 1; transition: opacity 0.3s ease; }
   </style>
 </head>
 <body>
@@ -666,6 +711,16 @@ body {
     <div class="stat-item" id="shinies-button">
       <span>⭐</span>
       <span id="shiny-counter">0</span>
+    </div>
+    <div class="stat-item" id="currency-counter-display">
+      <span>¥</span>
+      <span id="currency-counter">0</span>
+    </div>
+    <div class="stat-item" id="bag-button">
+      <span>🎒</span>
+    </div>
+    <div class="stat-item" id="shop-button">
+      <span>🛒</span>
     </div>
     <div class="stat-item" id="sound-toggle" style="cursor: pointer;">
       🔊
@@ -2546,28 +2601,48 @@ body {
     const pokemonData = JSON.parse(document.getElementById("pokedex-data").textContent.trim());
     let unlocked = {};
     let currentPokemon = null;
+    let currentOptions = [];
     let bonusQuestions = [];
     let bonusIndex = 0;
     let lastRocket = false;
     let currentIsShinyRound = false;
     let currentStreak = 0;
-    let totalShinyCount = 0;
     let gameAchievements = {};
+    let streakAchievementsThisRun = {};
     let soundEnabled = true;
     let gameMode = 'initial';
+    let isMenuOpen = false; 
+
+    let pokeyen = 0;
+    let bag = {};
+
+    const SHOP_ITEMS = {
+        pokeball: { name: "Poké Ball", price: 100, description: "Use during a catch to skip 1 bonus question.", sprite: "sprites/pokeball.png", effect: 1 },
+        greatball: { name: "Great Ball", price: 250, description: "Use during a catch to skip 2 bonus questions.", sprite: "sprites/greatball.png", effect: 2 },
+        ultraball: { name: "Ultra Ball", price: 500, description: "Use during a catch to skip all bonus questions.", sprite: "sprites/ultraball.png", effect: 3 }
+    };
 
     const ALL_ACHIEVEMENTS = {
-        firstCatch: { title: "First Steps", description: "Caught your first Pokémon!", icon: "👟" },
-        starterMaster: { title: "Starter Master", description: "Collected all three starter Pokémon!", icon: "🏆" },
-        milestone_10: { title: "Junior Trainer", description: "Caught 10 Pokémon!", icon: "🏅" },
-        milestone_25: { title: "Senior Trainer", description: "Caught 25 Pokémon!", icon: "🏅" },
-        milestone_50: { title: "Pokémon Researcher", description: "Caught 50 Pokémon!", icon: "🏅" },
-        milestone_100: { title: "Pokémon Professor", description: "Caught 100 Pokémon!", icon: "🏅" },
-        milestone_151: { title: "Pokémon Master", description: "Completed the entire Pokédex!", icon: "👑" },
-        streak5: { title: "Hot Streak", description: "5 correct answers in a row!", icon: "🔥" },
-        streak10: { title: "On Fire!", description: "10 correct answers in a row!", icon: "🔥🔥" },
-        firstShiny: { title: "Shiny Hunter", description: "Caught your first shiny Pokémon!", icon: "⭐" },
-        shinyCollector: { title: "Shiny Collector", description: "Caught 5 shiny Pokémon!", icon: "🌟" }
+        firstCatch:       { title: "First Steps", description: "Caught your first Pokémon!", icon: "👟", prize: 100 },
+        starterMaster:    { title: "Starter Master", description: "Collected all three starter Pokémon!", icon: "🏆", prize: 500 },
+        milestone_10:     { title: "Junior Trainer", description: "Caught 10 different Pokémon!", icon: "🏅", prize: 200 },
+        milestone_25:     { title: "Senior Trainer", description: "Caught 25 different Pokémon!", icon: "🏅", prize: 500 },
+        milestone_50:     { title: "Pokémon Researcher", description: "Caught 50 different Pokémon!", icon: "🏅", prize: 1000 },
+        milestone_100:    { title: "Pokémon Professor", description: "Caught 100 different Pokémon!", icon: "🏅", prize: 2500 },
+        milestone_151:    { title: "Pokémon Master", description: "Completed the entire Pokédex!", icon: "👑", prize: 10000 },
+        streak5:          { title: "Hot Streak", description: "5 correct answers in a row!", icon: "🔥", prize: 250, repeatable: true },
+        streak10:         { title: "On Fire!", description: "10 correct answers in a row!", icon: "🔥🔥", prize: 600, repeatable: true },
+        streak25:         { title: "Unstoppable!", description: "25 correct answers in a row!", icon: "☄️", prize: 2000, repeatable: true },
+        firstShiny:       { title: "Shiny Hunter", description: "Caught your first shiny Pokémon!", icon: "⭐", prize: 1000 },
+        shinyCollector:   { title: "Shiny Collector", description: "Caught 5 different shiny Pokémon!", icon: "🌟", prize: 2500 },
+        legendaryCatcher: { title: "Mythical Discovery", description: "Caught a legendary Pokémon!", icon: "🔮", prize: 3000 },
+        eeveeMaster:      { title: "Evolutionist", description: "Evolve Eevee into all its forms!", icon: "🧬", prize: 1500 },
+        waterCollector:   { title: "Water Specialist", description: "Catch 10 different Water-type Pokémon!", icon: "💧", prize: 500 },
+        fireCollector:    { title: "Fire Specialist", description: "Catch 10 different Fire-type Pokémon!", icon: "🔥", prize: 500 },
+        grassCollector:   { title: "Grass Specialist", description: "Catch 10 different Grass-type Pokémon!", icon: "🌿", prize: 500 },
+        bugCollector:     { title: "Bug Catcher", description: "Catch 10 different Bug-type Pokémon!", icon: "🐞", prize: 400 },
+        normalCollector:  { title: "Normal Trainer", description: "Catch 10 different Normal-type Pokémon!", icon: "🐾", prize: 400 },
+        poisonCollector:  { title: "Poison Expert", description: "Catch 10 different Poison-type Pokémon!", icon: "☠️", prize: 400 },
     };
 
     document.getElementById('sound-toggle').addEventListener('click', () => {
@@ -2580,7 +2655,8 @@ body {
       wrong: createBeepSound(300, 0.3),
       unlock: createSuccessSound(),
       rocket: createRocketSound(),
-      shiny: createShinySound()
+      shiny: createShinySound(),
+      buy: createBeepSound(1000, 0.1)
     };
 
     function padId(num) { return String(num).padStart(3, "0"); }
@@ -2719,51 +2795,62 @@ body {
       }
     }
 
-    function checkAchievements() {
-      const unlockedCount = Object.keys(unlocked).length;
-      const starterIds = [1, 4, 7];
-      const hasAllStarters = starterIds.every(id => unlocked[id]);
-      
-      if (unlockedCount === 1 && !gameAchievements.firstCatch) {
-        gameAchievements.firstCatch = true;
-        showAchievement(ALL_ACHIEVEMENTS.firstCatch.title, ALL_ACHIEVEMENTS.firstCatch.description);
-      }
-      
-      if (hasAllStarters && !gameAchievements.starterMaster) {
-        gameAchievements.starterMaster = true;
-        showAchievement(ALL_ACHIEVEMENTS.starterMaster.title, ALL_ACHIEVEMENTS.starterMaster.description);
-      }
-      
-      const milestones = [10, 25, 50, 100, 151];
-      milestones.forEach(milestone => {
-        if (unlockedCount >= milestone && !gameAchievements[`milestone_${milestone}`]) {
-          const key = `milestone_${milestone}`;
-          gameAchievements[key] = true;
-          showAchievement(ALL_ACHIEVEMENTS[key].title, ALL_ACHIEVEMENTS[key].description);
+    function grantAchievement(key) {
+        const achievement = ALL_ACHIEVEMENTS[key];
+        if (!achievement) return;
+
+        gameAchievements[key] = (gameAchievements[key] || 0) + 1;
+        pokeyen += achievement.prize;
+        showAchievement(achievement.title, `${achievement.description} (+¥${achievement.prize})`);
+        updateAllCounters();
+        saveGameData();
+    }
+
+    function checkAllAchievements() {
+        const unlockedCount = Object.keys(unlocked).length;
+        const shinyCount = Object.values(unlocked).filter(p => p === 'shiny').length;
+
+        // One-time achievements
+        if (!gameAchievements.firstCatch && unlockedCount >= 1) grantAchievement('firstCatch');
+        if (!gameAchievements.starterMaster && [1, 4, 7].every(id => unlocked[id])) grantAchievement('starterMaster');
+        if (!gameAchievements.milestone_10 && unlockedCount >= 10) grantAchievement('milestone_10');
+        if (!gameAchievements.milestone_25 && unlockedCount >= 25) grantAchievement('milestone_25');
+        if (!gameAchievements.milestone_50 && unlockedCount >= 50) grantAchievement('milestone_50');
+        if (!gameAchievements.milestone_100 && unlockedCount >= 100) grantAchievement('milestone_100');
+        if (!gameAchievements.milestone_151 && unlockedCount >= 151) grantAchievement('milestone_151');
+        if (!gameAchievements.firstShiny && shinyCount >= 1) grantAchievement('firstShiny');
+        if (!gameAchievements.shinyCollector && shinyCount >= 5) grantAchievement('shinyCollector');
+        if (!gameAchievements.legendaryCatcher && [144, 145, 146, 150, 151].some(id => unlocked[id])) grantAchievement('legendaryCatcher');
+        if (!gameAchievements.eeveeMaster && [133, 134, 135, 136].every(id => unlocked[id])) grantAchievement('eeveeMaster');
+
+        // Type collector achievements
+        const typeCounts = {};
+        Object.keys(unlocked).forEach(id => {
+            const p = pokemonData.find(pk => pk.id == id);
+            if(p) p.type.forEach(t => typeCounts[t] = (typeCounts[t] || 0) + 1);
+        });
+
+        if (!gameAchievements.waterCollector && (typeCounts['Water'] || 0) >= 10) grantAchievement('waterCollector');
+        if (!gameAchievements.fireCollector && (typeCounts['Fire'] || 0) >= 10) grantAchievement('fireCollector');
+        if (!gameAchievements.grassCollector && (typeCounts['Grass'] || 0) >= 10) grantAchievement('grassCollector');
+        if (!gameAchievements.bugCollector && (typeCounts['Bug'] || 0) >= 10) grantAchievement('bugCollector');
+        if (!gameAchievements.normalCollector && (typeCounts['Normal'] || 0) >= 10) grantAchievement('normalCollector');
+        if (!gameAchievements.poisonCollector && (typeCounts['Poison'] || 0) >= 10) grantAchievement('poisonCollector');
+    }
+
+    function checkStreakAchievements(streak) {
+        if (streak >= 5 && !streakAchievementsThisRun.s5) {
+            grantAchievement('streak5');
+            streakAchievementsThisRun.s5 = true;
         }
-      });
-      
-      if (currentStreak >= 5 && !gameAchievements.streak5) {
-        gameAchievements.streak5 = true;
-        showAchievement(ALL_ACHIEVEMENTS.streak5.title, ALL_ACHIEVEMENTS.streak5.description);
-      }
-      
-      if (currentStreak >= 10 && !gameAchievements.streak10) {
-        gameAchievements.streak10 = true;
-        showAchievement(ALL_ACHIEVEMENTS.streak10.title, ALL_ACHIEVEMENTS.streak10.description);
-      }
-      
-      if (totalShinyCount >= 1 && !gameAchievements.firstShiny) {
-        gameAchievements.firstShiny = true;
-        showAchievement(ALL_ACHIEVEMENTS.firstShiny.title, ALL_ACHIEVEMENTS.firstShiny.description);
-      }
-      
-      if (totalShinyCount >= 5 && !gameAchievements.shinyCollector) {
-        gameAchievements.shinyCollector = true;
-        showAchievement(ALL_ACHIEVEMENTS.shinyCollector.title, ALL_ACHIEVEMENTS.shinyCollector.description);
-      }
-      
-      localStorage.setItem("pokemonAchievements", JSON.stringify(gameAchievements));
+        if (streak >= 10 && !streakAchievementsThisRun.s10) {
+            grantAchievement('streak10');
+            streakAchievementsThisRun.s10 = true;
+        }
+        if (streak >= 25 && !streakAchievementsThisRun.s25) {
+            grantAchievement('streak25');
+            streakAchievementsThisRun.s25 = true;
+        }
     }
 
     function showAchievement(title, description) {
@@ -2780,7 +2867,11 @@ body {
       unlocked = JSON.parse(localStorage.getItem("unlockedPokemon")) || {};
       currentStreak = parseInt(localStorage.getItem("pokemonStreak")) || 0;
       gameAchievements = JSON.parse(localStorage.getItem("pokemonAchievements")) || {};
-      totalShinyCount = Object.values(unlocked).filter(type => type === "shiny").length;
+      pokeyen = parseInt(localStorage.getItem("pokemonPokeyen")) || 0;
+      bag = JSON.parse(localStorage.getItem("pokemonBag")) || {};
+      
+      const totalAchievements = Object.values(gameAchievements).reduce((sum, count) => sum + count, 0);
+      document.getElementById("achievement-counter").textContent = `${totalAchievements}`;
       updateAllCounters();
     }
 
@@ -2788,19 +2879,26 @@ body {
       localStorage.setItem("unlockedPokemon", JSON.stringify(unlocked));
       localStorage.setItem("pokemonStreak", currentStreak.toString());
       localStorage.setItem("pokemonAchievements", JSON.stringify(gameAchievements));
+      localStorage.setItem("pokemonPokeyen", pokeyen.toString());
+      localStorage.setItem("pokemonBag", JSON.stringify(bag));
     }
 
     function updateAllCounters() {
       const unlockedCount = Object.keys(unlocked).length;
       document.getElementById("pokedex-counter").textContent = `${unlockedCount} / 151`;
       document.getElementById("streak-counter").textContent = `${currentStreak}`;
-      document.getElementById("shiny-counter").textContent = `${totalShinyCount}`;
-      const achievementsUnlocked = Object.keys(gameAchievements || {}).length;
-      document.getElementById("achievement-counter").textContent = `${achievementsUnlocked}`;
+      const shinyCount = Object.values(unlocked).filter(p => p === 'shiny').length;
+      document.getElementById("shiny-counter").textContent = `${shinyCount}`;
+      document.getElementById("currency-counter").textContent = `${pokeyen}`;
+      const totalAchievements = Object.values(gameAchievements).reduce((sum, count) => sum + count, 0);
+      document.getElementById("achievement-counter").textContent = `${totalAchievements}`;
     }
 
     function startRound() {
       gameMode = 'main';
+      document.querySelector('.game-container').classList.remove('info-mode-active');
+      document.getElementById('pokedex-device').classList.remove('hidden');
+      document.getElementById('pokedex-grid').classList.remove('hidden');
       document.getElementById('pokemon-display').style.cursor = 'default';
       
       document.getElementById('question-answers-area').classList.remove('hidden');
@@ -2809,25 +2907,26 @@ body {
       document.getElementById('bonus-pokeballs-container').classList.add('hidden');
       document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
       document.getElementById('pokemon-display').classList.remove('energy-burst');
-
+      
       if (!lastRocket && Math.random() < 0.10) {
-        lastRocket = true;
-        handleTeamRocket();
-        return;
+          lastRocket = true;
+          handleTeamRocket();
+          return;
       }
       lastRocket = false;
 
       const lockedList = pokemonData.filter(p => !(p.id in unlocked));
       if (lockedList.length === 0) {
-        document.getElementById("question-text").textContent = "Congratulations! You've caught them all!";
-        showAchievement("Pokémon Master", "Completed the entire Pokédex!");
-        document.getElementById('answers-grid').innerHTML = '';
-        return;
+          document.getElementById("question-text").textContent = "Congratulations! You've caught them all!";
+          if(!gameAchievements.milestone_151) checkAllAchievements();
+          document.getElementById('answers-grid').innerHTML = '';
+          return;
       }
-
       currentPokemon = lockedList[Math.floor(Math.random() * lockedList.length)];
+
       const pokemonImg = document.getElementById("pokemon-image");
       pokemonImg.src = getSilhouettePath(currentPokemon.id);
+      pokemonImg.style.transform = 'scale(1.20)'; 
       pokemonImg.style.filter = 'brightness(0) drop-shadow(2px 2px 4px rgba(0,0,0,0.3))';
       pokemonImg.classList.remove('shiny');
       
@@ -2835,10 +2934,11 @@ body {
       
       const otherNames = shuffle(pokemonData.filter(p => p.id !== currentPokemon.id)).slice(0,3).map(p => p.name);
       const options = shuffle([currentPokemon.name, ...otherNames]);
+      currentOptions = [...options];
       
       const answersGrid = document.getElementById("answers-grid");
       answersGrid.innerHTML = "";
-      options.forEach(name => {
+      currentOptions.forEach(name => {
         const btn = document.createElement("button");
         btn.className = "answer-button";
         btn.textContent = name;
@@ -2848,10 +2948,13 @@ body {
     }
 
     function handleGuess(name, buttonElement) {
+      if (isMenuOpen) return;
       if (name === currentPokemon.name) {
         sounds.correct();
         buttonElement.classList.add('correct');
         currentStreak++;
+        checkStreakAchievements(currentStreak);
+        pokeyen += 10; 
         updateAllCounters();
         document.getElementById("question-text").textContent = "Correct! Catch Phase starting...";
         
@@ -2862,6 +2965,7 @@ body {
         sounds.wrong();
         buttonElement.classList.add('wrong');
         currentStreak = 0;
+        streakAchievementsThisRun = {}; // Reset streak achievements
         updateAllCounters();
         document.getElementById("question-text").textContent = "Wrong! Try again with a new Pokémon...";
         
@@ -2876,14 +2980,10 @@ body {
       gameMode = 'rocket';
       sounds.rocket();
       
-      if (Object.keys(unlocked).length < 5) {
-        startRound();
-        return;
-      }
-
       document.getElementById('pokedex-device').classList.add('team-rocket-mode');
       const pokemonImg = document.getElementById("pokemon-image");
       pokemonImg.src = "sprites/pokemon_000.png";
+      pokemonImg.style.transform = 'scale(0.90)'; 
       pokemonImg.style.filter = '';
       pokemonImg.classList.remove('shiny');
       document.getElementById('answers-grid').innerHTML = '';
@@ -2891,11 +2991,10 @@ body {
       const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
       let message;
 
-      if (Math.random() < 0.75 && normalKeys.length > 0) {
+      if (Object.keys(unlocked).length >= 5 && Math.random() < 0.75 && normalKeys.length > 0) {
         const stealId = parseInt(normalKeys[Math.floor(Math.random() * normalKeys.length)], 10);
         const stolenName = pokemonData.find(p => p.id === stealId)?.name || `Pokémon #${stealId}`;
         delete unlocked[stealId];
-        totalShinyCount = Object.values(unlocked).filter(type => type === "shiny").length;
         saveGameData();
         updatePokedexUI();
         updateAllCounters();
@@ -3006,10 +3105,11 @@ body {
       const availableWrongs = shuffle(pool.filter(p => p !== correctAnswer));
       const wrongs = availableWrongs.slice(0, 3);
       
-      const answers = shuffle([correctAnswer, ...wrongs]);
+      const options = shuffle([correctAnswer, ...wrongs]);
+      currentOptions = [...options];
       const answersGrid = document.getElementById("answers-grid");
       answersGrid.innerHTML = "";
-      answers.forEach(ans => {
+      options.forEach(ans => {
         const btn = document.createElement("button");
         btn.className = "answer-button";
         btn.textContent = ans;
@@ -3019,9 +3119,12 @@ body {
     }
 
     function handleBonusAnswer(selected, correctAnswer, buttonElement) {
+      if (isMenuOpen) return;
       if (selected === correctAnswer) {
         sounds.correct();
         buttonElement.classList.add('correct');
+        pokeyen += 10; // Award for correct bonus question
+        updateAllCounters();
         
         const pokeballs = document.querySelectorAll('.bonus-pokeball');
         if (pokeballs[bonusIndex]) {
@@ -3034,6 +3137,7 @@ body {
         sounds.wrong();
         buttonElement.classList.add('wrong');
         currentStreak = 0;
+        streakAchievementsThisRun = {}; // Reset streak achievements
         updateAllCounters();
         document.getElementById("question-text").textContent = "Wrong! Better luck next time!";
         setTimeout(startRound, 1500);
@@ -3047,8 +3151,6 @@ body {
       
       if (isShiny) {
         sounds.shiny();
-        totalShinyCount++;
-        createParticles(document.getElementById('game-particles'), 30, '#ffd700');
       } else {
         sounds.unlock();
         createParticles(document.getElementById('game-particles'), 15, '#4ecdc4');
@@ -3056,8 +3158,8 @@ body {
 
       saveGameData();
       updatePokedexUI();
+      checkAllAchievements(); // Check after saving and updating UI
       updateAllCounters();
-      checkAchievements();
 
       document.getElementById("question-text").textContent =
         `Congratulations! You unlocked ${isShiny ? "a shiny" : "a"} ${currentPokemon.name}!`;
@@ -3103,8 +3205,15 @@ body {
       }
     }
 
+    // --- VIEW SWITCHING LOGIC ---
+
     function showPokedexEntry(p) {
-      gameMode = 'pokedex';
+      if (isMenuOpen) return;
+      isMenuOpen = true;
+      
+      document.querySelector('.game-container').classList.remove('info-mode-active');
+      document.getElementById('pokedex-device').classList.remove('hidden');
+      document.getElementById('pokedex-grid').classList.add('hidden');
       document.getElementById('question-answers-area').classList.add('hidden');
       document.getElementById('pokedex-info-display').classList.remove('hidden');
       
@@ -3112,82 +3221,103 @@ body {
       const shiny = unlocked[p.id] === "shiny";
       pokemonImg.src = getSpritePath(p.id, shiny);
       pokemonImg.style.filter = '';
+      pokemonImg.style.transform = 'scale(1.20)';
       pokemonImg.classList.toggle('shiny', shiny);
       
       document.getElementById('pokemon-display').classList.remove('energy-burst');
       
       const statsDisplay = document.getElementById('stats-display');
-      statsDisplay.innerHTML =
-        `<h3>${p.name.toUpperCase()}${shiny ? ' ✨' : ''}</h3>` +
-        `<strong>Height:</strong> ${p.height}<br>` +
-        `<strong>Weight:</strong> ${p.weight}<br>` +
-        `<strong>Type:</strong> ${p.type.join(", ")}<br>` +
-        `<strong>Ability:</strong> ${p.ability}<br>` +
-        `<strong>Moves:</strong> ${p.move.slice(0, 5).join(", ")}...<br>` +
-        `<strong>Egg group:</strong> ${p.egg_group}<br>` +
-        `<strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}<br>` +
-        `<strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}<br>` +
-        `<strong>Pokédex #:</strong> ${p.id}`;
+      statsDisplay.innerHTML = `<h3>${p.name.toUpperCase()}${shiny ? ' ✨' : ''}</h3>` +
+        `<div class="stats-grid">` +
+          `<div><strong>Height:</strong> ${p.height}</div>` +
+          `<div><strong>Weight:</strong> ${p.weight}</div>` +
+          `<div><strong>Type:</strong> ${p.type.join(", ")}</div>` +
+          `<div><strong>Ability:</strong> ${p.ability}</div>` +
+          `<div><strong>Egg group:</strong> ${p.egg_group}</div>` +
+          `<div><strong>Pokédex #:</strong> ${p.id}</div>` +
+          `<div style="grid-column: 1 / -1;"><strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}</div>` +
+          `<div style="grid-column: 1 / -1;"><strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}</div>` +
+        `</div>`;
+    }
+    
+    function resumeMainRound() {
+        document.querySelector('.game-container').classList.remove('info-mode-active');
+        document.getElementById('pokedex-device').classList.remove('hidden');
+        document.getElementById('pokedex-grid').classList.remove('hidden');
+        document.getElementById('question-answers-area').classList.remove('hidden');
+        document.getElementById('pokedex-info-display').classList.add('hidden');
+        startRound(true); // Call startRound in resume mode
     }
 
     function exitPokedexView() {
-      document.getElementById('question-answers-area').classList.remove('hidden');
-      document.getElementById('pokedex-info-display').classList.add('hidden');
-      startRound();
+      isMenuOpen = false;
+      
+      if (gameMode === 'bonus') {
+        resumeBonusRound();
+      } else if (gameMode === 'main') {
+        resumeMainRound();
+      } else {
+        startRound();
+      }
+    }
+    
+    function resumeBonusRound() {
+        document.querySelector('.game-container').classList.remove('info-mode-active');
+        document.getElementById('pokedex-device').classList.remove('hidden');
+        document.getElementById('pokedex-grid').classList.remove('hidden'); 
+        document.getElementById('question-answers-area').classList.remove('hidden');
+        document.getElementById('pokedex-info-display').classList.add('hidden');
+        
+        const pokemonImg = document.getElementById("pokemon-image");
+        pokemonImg.src = getSpritePath(currentPokemon.id, currentIsShinyRound);
+        pokemonImg.style.filter = '';
+        pokemonImg.classList.toggle('shiny', currentIsShinyRound);
+        
+        askNextBonusQuestion();
     }
 
-    function showAchievementsView() {
-        gameMode = 'pokedex'; 
+    function showInfoScreen(buildFunction) {
+        if (isMenuOpen) return;
+        isMenuOpen = true;
+        
+        document.querySelector('.game-container').classList.add('info-mode-active');
+        document.getElementById('pokedex-device').classList.add('hidden');
+        document.getElementById('pokedex-grid').classList.add('hidden');
         document.getElementById('question-answers-area').classList.add('hidden');
         document.getElementById('pokedex-info-display').classList.remove('hidden');
+        
+        buildFunction();
+    }
+
+    function buildAchievementsView() {
         const statsDisplay = document.getElementById('stats-display');
-
-        const pokemonImg = document.getElementById("pokemon-image");
-        pokemonImg.src = "sprites/questionmark.png";
-        pokemonImg.style.filter = '';
-        pokemonImg.classList.remove('shiny');
-
         statsDisplay.innerHTML = `<h3>🏆 Achievements</h3>`;
-
         const grid = document.createElement('div');
         grid.id = 'achievement-grid';
 
         for (const key in ALL_ACHIEVEMENTS) {
             const achievement = ALL_ACHIEVEMENTS[key];
-            const isUnlocked = gameAchievements[key];
-
+            const isUnlocked = gameAchievements[key] > 0;
             const entry = document.createElement('div');
             entry.className = 'achievement-entry';
-            if (!isUnlocked) {
-                entry.classList.add('locked');
-            }
+            if (!isUnlocked) entry.classList.add('locked');
+            
+            const countText = isUnlocked && achievement.repeatable ? ` (x${gameAchievements[key]})` : '';
 
             entry.innerHTML = `
                 <div class="icon">${achievement.icon}</div>
                 <div class="details">
-                    <h4>${achievement.title}</h4>
-                    <p>${achievement.description}</p>
-                </div>
-            `;
+                    <h4>${achievement.title}${countText}</h4>
+                    <p>${achievement.description} (+¥${achievement.prize})</p>
+                </div>`;
             grid.appendChild(entry);
         }
-        
         statsDisplay.appendChild(grid);
     }
 
-    function showShiniesView() {
-        gameMode = 'pokedex';
-        document.getElementById('question-answers-area').classList.add('hidden');
-        document.getElementById('pokedex-info-display').classList.remove('hidden');
+    function buildShiniesView() {
         const statsDisplay = document.getElementById('stats-display');
-
-        const pokemonImg = document.getElementById("pokemon-image");
-        pokemonImg.src = "sprites/questionmark.png";
-        pokemonImg.style.filter = '';
-        pokemonImg.classList.remove('shiny');
-        
         statsDisplay.innerHTML = `<h3>⭐ Your Shiny Pokémon</h3>`;
-
         const shinyIds = Object.keys(unlocked).filter(id => unlocked[id] === 'shiny');
 
         if (shinyIds.length === 0) {
@@ -3195,23 +3325,122 @@ body {
         } else {
             const grid = document.createElement('div');
             grid.id = 'shiny-grid';
-            
             shinyIds.forEach(id => {
                 const pokemon = pokemonData.find(p => p.id == id);
                 const item = document.createElement('div');
                 item.className = 'shiny-grid-item';
                 item.innerHTML = `
                     <img src="${getSpritePath(id, true)}" alt="Shiny ${pokemon.name}">
-                    <p>${pokemon.name}</p>
-                `;
+                    <p>${pokemon.name}</p>`;
                 grid.appendChild(item);
             });
             statsDisplay.appendChild(grid);
         }
     }
 
+    function buildShopView() {
+        const statsDisplay = document.getElementById('stats-display');
+        statsDisplay.innerHTML = `<h3>🛒 Item Shop (Your balance: ¥${pokeyen})</h3>`;
+        const grid = document.createElement('div');
+        grid.id = 'item-display-grid';
+
+        for (const key in SHOP_ITEMS) {
+            const item = SHOP_ITEMS[key];
+            const card = document.createElement('div');
+            card.className = 'item-grid-entry';
+            if (pokeyen >= item.price) {
+              card.classList.add('can-buy');
+            }
+
+            card.innerHTML = `
+                <img src="${item.sprite}" alt="${item.name}">
+                <h4>${item.name}</h4>
+                <p>${item.description}</p>
+                <div class="price">¥${item.price}</div>
+                <button class="buy-button" ${pokeyen < item.price ? 'disabled' : ''}>Buy</button>
+            `;
+            card.querySelector('.buy-button').onclick = () => buyItem(key);
+            grid.appendChild(card);
+        }
+        statsDisplay.appendChild(grid);
+    }
+    
+    function buyItem(key) {
+        const item = SHOP_ITEMS[key];
+        if (pokeyen >= item.price) {
+            sounds.buy();
+            pokeyen -= item.price;
+            bag[key] = (bag[key] || 0) + 1;
+            saveGameData();
+            updateAllCounters();
+            buildShopView(); // Refresh shop view to update button states
+        }
+    }
+
+    function buildBagView() {
+        const statsDisplay = document.getElementById('stats-display');
+        statsDisplay.innerHTML = `<h3>🎒 Your Bag</h3>`;
+        
+        const itemKeys = Object.keys(bag).filter(key => bag[key] > 0);
+
+        if (itemKeys.length === 0) {
+            statsDisplay.innerHTML += `<p style="text-align: center; padding: 2rem 0;">Your bag is empty. Visit the shop!</p>`;
+        } else {
+            const grid = document.createElement('div');
+            grid.id = 'item-display-grid';
+
+            itemKeys.forEach(key => {
+                const item = SHOP_ITEMS[key];
+                const card = document.createElement('div');
+                card.className = 'item-grid-entry';
+                
+                card.innerHTML = `
+                    <img src="${item.sprite}" alt="${item.name}">
+                    <h4>${item.name}</h4>
+                    <p>${item.description}</p>
+                    <div class="item-count">x${bag[key]}</div>
+                `;
+                if (gameMode === 'bonus') {
+                    card.classList.add('can-use');
+                    card.onclick = () => useItem(key);
+                } else {
+                    card.classList.add('cannot-use');
+                }
+                grid.appendChild(card);
+            });
+            statsDisplay.appendChild(grid);
+        }
+    }
+
+    function useItem(key) {
+      if (!bag[key] || bag[key] <= 0) return;
+
+      sounds.correct(); 
+
+      bag[key]--;
+      const item = SHOP_ITEMS[key];
+      
+      for(let i=0; i<item.effect; i++) {
+          if (bonusIndex < bonusQuestions.length) {
+              const pokeballs = document.querySelectorAll('.bonus-pokeball');
+              if (pokeballs[bonusIndex]) {
+                  pokeballs[bonusIndex].classList.add('unlocked');
+              }
+              bonusIndex++;
+          }
+      }
+
+      saveGameData();
+      updateAllCounters();
+      
+      exitPokedexView();
+    }
+
     function setupInitialView() {
       gameMode = 'initial';
+      document.querySelector('.game-container').classList.remove('info-mode-active');
+      document.getElementById('pokedex-device').classList.remove('hidden');
+      document.getElementById('pokedex-grid').classList.remove('hidden');
       const pokemonImg = document.getElementById("pokemon-image");
       pokemonImg.src = "sprites/questionmark.png";
       pokemonImg.style.filter = '';
@@ -3224,8 +3453,10 @@ body {
 
     // Event listeners
     document.getElementById('back-button').addEventListener('click', exitPokedexView);
-    document.getElementById('achievements-button').addEventListener('click', showAchievementsView);
-    document.getElementById('shinies-button').addEventListener('click', showShiniesView);
+    document.getElementById('achievements-button').addEventListener('click', () => showInfoScreen(buildAchievementsView));
+    document.getElementById('shinies-button').addEventListener('click', () => showInfoScreen(buildShiniesView));
+    document.getElementById('shop-button').addEventListener('click', () => showInfoScreen(buildShopView));
+    document.getElementById('bag-button').addEventListener('click', () => showInfoScreen(buildBagView));
 
     document.getElementById('pokemon-display').addEventListener('click', () => {
       if (gameMode === 'initial') {
@@ -3234,11 +3465,13 @@ body {
     });
 
     document.addEventListener('keydown', (e) => {
-      if (gameMode === 'pokedex' && e.key === 'Escape') {
+      if (isMenuOpen && e.key === 'Escape') {
         exitPokedexView();
         return;
       }
       
+      if (isMenuOpen) return;
+
       if (gameMode === 'main' || gameMode === 'bonus') {
         const answers = document.querySelectorAll('.answer-button');
         if (answers.length > 0) {
