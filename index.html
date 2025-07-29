@@ -244,21 +244,24 @@ body {
   background: #333;
 }
 
-/* MODIFIED: Wrapper for bottom content */
+/* CORRECTED LAYOUT WRAPPER */
 #bottom-content-area {
-  display: flex;
-  flex-direction: column;
   flex-shrink: 0;
   min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  position: relative; 
 }
 
-/* Question and answers area */
-.question-answers-area {
+.question-answers-area, #pokedex-info-display {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  flex: 1; /* Fills the wrapper */
-  min-height: 0; /* Allows shrinking within wrapper */
 }
 
 .question-text {
@@ -408,10 +411,7 @@ body {
   background: rgba(255,255,255,0.9);
   border-radius: 15px;
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  flex: 1; /* Fills the wrapper */
-  min-height: 0; /* Allows shrinking inside wrapper */
+  min-height: 0;
 }
 
 #stats-display {
@@ -439,7 +439,7 @@ body {
   transition: all 0.2s ease;
   margin-top: 1rem;
   width: 100%;
-  flex-shrink: 0; 
+  flex-shrink: 0;
 }
 
 #back-button:hover {
@@ -711,8 +711,8 @@ body {
       </div>
 
       <div id="pokedex-info-display" class="hidden">
-          <div id="stats-display"></div>
-          <button id="back-button">Back to Game</button>
+        <div id="stats-display"></div>
+        <button id="back-button">Back to Game</button>
       </div>
     </div>
 
@@ -2553,19 +2553,11 @@ body {
     let totalShinyCount = 0;
     let gameAchievements = {};
     let soundEnabled = true;
-    let gameMode = 'initial'; // MODIFIED: Start in 'initial' mode
+    let gameMode = 'initial';
 
     const ALL_ACHIEVEMENTS = {
-        firstCatch: {
-            title: "First Steps",
-            description: "Caught your first Pokémon!",
-            icon: "👟"
-        },
-        starterMaster: {
-            title: "Starter Master",
-            description: "Collected all three starter Pokémon!",
-            icon: "🏆"
-        },
+        firstCatch: { title: "First Steps", description: "Caught your first Pokémon!", icon: "👟" },
+        starterMaster: { title: "Starter Master", description: "Collected all three starter Pokémon!", icon: "🏆" },
         milestone_10: { title: "Junior Trainer", description: "Caught 10 Pokémon!", icon: "🏅" },
         milestone_25: { title: "Senior Trainer", description: "Caught 25 Pokémon!", icon: "🏅" },
         milestone_50: { title: "Pokémon Researcher", description: "Caught 50 Pokémon!", icon: "🏅" },
@@ -2582,7 +2574,6 @@ body {
       document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊' : '🔇';
     });
 
-    // Sound effects using Web Audio API
     const sounds = {
       correct: createBeepSound(800, 0.2),
       wrong: createBeepSound(300, 0.3),
@@ -2591,21 +2582,14 @@ body {
       shiny: createShinySound()
     };
 
-    // Utility functions
     function padId(num) { return String(num).padStart(3, "0"); }
     function getSpritePath(id, shiny=false) { 
       const baseUrl = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
-      if (shiny) {
-          return `${baseUrl}shiny/${id}.png`;
-      }
-      return `${baseUrl}${id}.png`;
+      return shiny ? `${baseUrl}shiny/${id}.png` : `${baseUrl}${id}.png`;
     }
-    function getSilhouettePath(id) { 
-        return getSpritePath(id, false);
-    }
+    function getSilhouettePath(id) { return getSpritePath(id, false); }
     function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
 
-    // Create simple sound effects using Web Audio API
     function createBeepSound(frequency, duration) {
       return () => {
         if (!soundEnabled) return;
@@ -2716,7 +2700,6 @@ body {
       };
     }
 
-    // Particle effects
     function createParticles(container, count = 20, color = '#ffd700') {
       for (let i = 0; i < count; i++) {
         const particle = document.createElement('div');
@@ -2735,7 +2718,6 @@ body {
       }
     }
 
-    // Achievement system
     function checkAchievements() {
       const unlockedCount = Object.keys(unlocked).length;
       const starterIds = [1, 4, 7];
@@ -2793,7 +2775,6 @@ body {
       }, 4000);
     }
 
-    // Load and save game data
     function loadGameData() {
       unlocked = JSON.parse(localStorage.getItem("unlockedPokemon")) || {};
       currentStreak = parseInt(localStorage.getItem("pokemonStreak")) || 0;
@@ -2808,7 +2789,6 @@ body {
       localStorage.setItem("pokemonAchievements", JSON.stringify(gameAchievements));
     }
 
-    // Update UI counters
     function updateAllCounters() {
       const unlockedCount = Object.keys(unlocked).length;
       document.getElementById("pokedex-counter").textContent = `${unlockedCount} / 151`;
@@ -2818,13 +2798,13 @@ body {
       document.getElementById("achievement-counter").textContent = `${achievementsUnlocked}`;
     }
 
-    // Game logic functions
     function startRound() {
       gameMode = 'main';
       document.getElementById('pokemon-display').style.cursor = 'default';
-
-      document.getElementById('pokedex-info-display').classList.add('hidden');
+      
       document.getElementById('question-answers-area').classList.remove('hidden');
+      document.getElementById('pokedex-info-display').classList.add('hidden');
+
       document.getElementById('bonus-pokeballs-container').classList.add('hidden');
       document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
       document.getElementById('pokemon-display').classList.remove('energy-burst');
@@ -2872,7 +2852,7 @@ body {
         buttonElement.classList.add('correct');
         currentStreak++;
         updateAllCounters();
-        document.getElementById("question-text").textContent = "Correct! Bonus Round starting...";
+        document.getElementById("question-text").textContent = "Correct! Catch Phase starting...";
         
         setTimeout(() => {
           startBonusRound();
@@ -2890,7 +2870,7 @@ body {
       }
       saveGameData();
     }
-
+    
     function handleTeamRocket() {
       gameMode = 'rocket';
       sounds.rocket();
@@ -3084,44 +3064,43 @@ body {
       setTimeout(startRound, 2500);
     }
 
- function updatePokedexUI() {
-  const grid = document.getElementById("pokedex-grid");
-  grid.innerHTML = "";
+    function updatePokedexUI() {
+      const grid = document.getElementById("pokedex-grid");
+      grid.innerHTML = "";
 
-  for (let i = 1; i <= 151; i++) {
-    const p = pokemonData.find(pokemon => pokemon.id === i);
-    const card = document.createElement("div");
-    card.className = "pokemon-card";
-    if (unlocked[i] === "shiny") card.classList.add("shiny-card");
-    
-    const img = document.createElement("img");
-    const label = document.createElement("div");
-    label.className = "label";
-    
-    if (unlocked[i]) {
-      const shiny = unlocked[i] === "shiny";
-      img.src = getSpritePath(i, shiny);
-      img.style.filter = '';
-      if (p) {
-        label.textContent = shiny ? `${p.name} ✨` : p.name;
-        card.style.cursor = "pointer";
-        card.onclick = () => showPokedexEntry(p);
-      } else {
-        label.textContent = `#${i}`;
+      for (let i = 1; i <= 151; i++) {
+        const p = pokemonData.find(pokemon => pokemon.id === i);
+        const card = document.createElement("div");
+        card.className = "pokemon-card";
+        if (unlocked[i] === "shiny") card.classList.add("shiny-card");
+        
+        const img = document.createElement("img");
+        const label = document.createElement("div");
+        label.className = "label";
+        
+        if (unlocked[i]) {
+          const shiny = unlocked[i] === "shiny";
+          img.src = getSpritePath(i, shiny);
+          img.style.filter = '';
+          if (p) {
+            label.textContent = shiny ? `${p.name} ✨` : p.name;
+            card.style.cursor = "pointer";
+            card.onclick = () => showPokedexEntry(p);
+          } else {
+            label.textContent = `#${i}`;
+          }
+        } else {
+          img.src = getSpritePath(i, false);
+          img.style.filter = 'brightness(0)';
+          label.textContent = "???";
+          card.style.cursor = "default";
+        }
+        
+        card.appendChild(img);
+        card.appendChild(label);
+        grid.appendChild(card);
       }
-    } else {
-      // This part is changed back to show silhouettes
-      img.src = getSpritePath(i, false);
-      img.style.filter = 'brightness(0)';
-      label.textContent = "???";
-      card.style.cursor = "default";
     }
-    
-    card.appendChild(img);
-    card.appendChild(label);
-    grid.appendChild(card);
-  }
-}
 
     function showPokedexEntry(p) {
       gameMode = 'pokedex';
@@ -3151,8 +3130,8 @@ body {
     }
 
     function exitPokedexView() {
-      document.getElementById('pokedex-info-display').classList.add('hidden');
       document.getElementById('question-answers-area').classList.remove('hidden');
+      document.getElementById('pokedex-info-display').classList.add('hidden');
       startRound();
     }
 
@@ -3239,7 +3218,7 @@ body {
       document.getElementById('pokemon-display').style.cursor = 'pointer';
 
       document.getElementById("question-text").textContent = "Click the ? to begin your adventure!";
-      document.getElementById("answers-grid").innerHTML = ""; // Clear answers
+      document.getElementById("answers-grid").innerHTML = "";
     }
 
     // Event listeners
