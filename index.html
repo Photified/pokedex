@@ -624,6 +624,44 @@ body {
     animation: rocket-text-leave 0.3s ease-in forwards;
 }
 
+/* Meowth Quick-Time Event */
+.meowth-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 100px;
+  cursor: pointer;
+  z-index: 500;
+  animation: rocket-enter 0.2s ease-out forwards, rocket-shake 0.5s 0.2s linear infinite;
+  text-shadow: 0 5px 15px rgba(255, 215, 0, 0.5); /* Gold shadow */
+}
+
+.meowth-popup.fade-out {
+    animation: rocket-leave 0.2s ease-in forwards;
+}
+
+.meowth-text-popup {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 193, 7, 0.9); /* Gold color */
+    color: #333; /* Dark text for contrast */
+    padding: 4rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    z-index: 500;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.4);
+    text-align: center;
+    animation: rocket-text-enter 0.3s ease-out forwards;
+}
+
+.meowth-text-popup.fade-out {
+    animation: rocket-text-leave 0.3s ease-in forwards;
+}
+
+
 @keyframes rocket-text-enter {
     from { transform: translateY(100%); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
@@ -902,8 +940,12 @@ body {
     <p id="achievement-text" style="margin: 0;"></p>
   </div>
   
+  <!-- Encounter Popups -->
   <div id="rocket-popup" class="rocket-popup hidden">🚀</div>
   <div id="rocket-text-popup" class="rocket-text-popup hidden">Blast Team Rocket!</div>
+  <div id="meowth-popup" class="meowth-popup hidden">💰</div>
+  <div id="meowth-text-popup" class="meowth-text-popup hidden">Stop Meowth!</div>
+
 
   <script id="pokedex-data" type="application/json">
 [
@@ -2730,6 +2772,7 @@ body {
     let bonusQuestions = [];
     let bonusIndex = 0;
     let lastRocket = false;
+    let lastMeowth = false; // To prevent back-to-back Meowth encounters
     let currentIsShinyRound = false;
     let currentStreak = 0;
     let gameAchievements = {};
@@ -2781,7 +2824,8 @@ body {
       unlock: createSuccessSound(),
       rocket: createRocketSound(),
       shiny: createShinySound(),
-      buy: createBeepSound(1000, 0.1)
+      buy: createBeepSound(1000, 0.1),
+      meowth: createCoinSound()
     };
 
     function padId(num) { return String(num).padStart(3, "0"); }
@@ -2867,6 +2911,36 @@ body {
           
           oscillator.start(audioContext.currentTime);
           oscillator.stop(audioContext.currentTime + 1);
+        } catch (e) {
+          console.log('Audio not available');
+        }
+      };
+    }
+    
+    function createCoinSound() {
+      return () => {
+        if (!soundEnabled) return;
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const frequencies = [1047, 1397, 1568]; // High-pitched notes
+          
+          frequencies.forEach((freq, i) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = freq;
+            oscillator.type = 'sine';
+            
+            const startTime = audioContext.currentTime + i * 0.04;
+            gainNode.gain.setValueAtTime(0.25, startTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+            
+            oscillator.start(startTime);
+            oscillator.stop(startTime + 0.2);
+          });
         } catch (e) {
           console.log('Audio not available');
         }
@@ -3034,12 +3108,20 @@ body {
       document.getElementById('pokemon-display').classList.remove('energy-burst');
       
       if (!isResume) {
-        if (!lastRocket && Math.random() < 0.2) {
+        const eventRoll = Math.random();
+        if (!lastRocket && !lastMeowth && eventRoll < 0.15) { // 15% chance for Rocket
             lastRocket = true;
+            lastMeowth = false;
             handleTeamRocket();
+            return;
+        } else if (!lastMeowth && !lastRocket && eventRoll < 0.30) { // Another 15% chance for Meowth
+            lastMeowth = true;
+            lastRocket = false;
+            handleMeowthEncounter();
             return;
         }
         lastRocket = false;
+        lastMeowth = false;
 
         const lockedList = pokemonData.filter(p => !(p.id in unlocked));
         if (lockedList.length === 0) {
@@ -3106,6 +3188,7 @@ body {
     }
     
     let rocketTimer = null;
+    let meowthTimer = null;
 
     function handleTeamRocket() {
         gameMode = 'rocket';
@@ -3184,6 +3267,106 @@ body {
                 rocketPopup.classList.remove('fade-out');
                 rocketTextPopup.classList.add('hidden');
                 rocketTextPopup.classList.remove('fade-out');
+                document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
+                startRound();
+            }, 4000);
+
+        }, 1500); // 1.5-second window
+    }
+
+    function handleMeowthEncounter() {
+        gameMode = 'meowth';
+        sounds.meowth();
+        
+        // Re-using rocket style for dark background, but showing Meowth sprite
+        document.getElementById('pokedex-device').classList.add('team-rocket-mode');
+        const pokemonImg = document.getElementById("pokemon-image");
+        pokemonImg.src = getSpritePath(52); // Meowth's ID
+        pokemonImg.style.transform = 'scale(1)'; 
+        pokemonImg.style.filter = '';
+        pokemonImg.classList.remove('shiny');
+        document.getElementById('answers-grid').innerHTML = '';
+        document.getElementById("question-text").textContent = "A wild Meowth appeared!";
+
+        const meowthPopup = document.getElementById('meowth-popup');
+        const meowthTextPopup = document.getElementById('meowth-text-popup');
+        let clickedCoin = false;
+
+        // Randomize position of the coin
+        const randomTop = Math.random() * 70 + 15; 
+        const randomLeft = Math.random() * 70 + 15;
+        meowthPopup.style.top = `${randomTop}vh`;
+        meowthPopup.style.left = `${randomLeft}vw`;
+
+        const onCoinClick = () => {
+            clickedCoin = true;
+            clearTimeout(meowthTimer);
+            meowthPopup.removeEventListener('click', onCoinClick);
+            meowthPopup.classList.add('fade-out');
+            meowthTextPopup.classList.add('fade-out');
+            
+            let message;
+            if (Math.random() < 0.25) { // 25% steal chance on success
+                const amounts = [10, 20, 30, 40, 50];
+                const stolenAmount = amounts[Math.floor(Math.random() * amounts.length)];
+                if (pokeyen > 0) {
+                    const actualStolen = Math.min(pokeyen, stolenAmount);
+                    pokeyen -= actualStolen;
+                    message = `You were fast, but Meowth still stole ¥${actualStolen}!`;
+                    createParticles(document.getElementById('game-particles'), 15, '#ffeb3b');
+                } else {
+                    message = `Meowth tried to steal ¥${stolenAmount}, but you're broke!`;
+                }
+            } else {
+                message = "You stopped Meowth from stealing your money!";
+            }
+            document.getElementById("question-text").textContent = message;
+            updateAllCounters();
+            saveGameData();
+            
+            setTimeout(() => {
+                meowthPopup.classList.add('hidden');
+                meowthPopup.classList.remove('fade-out');
+                meowthTextPopup.classList.add('hidden');
+                meowthTextPopup.classList.remove('fade-out');
+                document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
+                startRound();
+            }, 3000);
+        };
+
+        meowthPopup.addEventListener('click', onCoinClick);
+        meowthPopup.classList.remove('hidden');
+        meowthTextPopup.classList.remove('hidden');
+
+        meowthTimer = setTimeout(() => {
+            if (clickedCoin) return;
+            
+            meowthPopup.removeEventListener('click', onCoinClick);
+            meowthPopup.classList.add('fade-out');
+            meowthTextPopup.classList.add('fade-out');
+
+            let message;
+            const amounts = [10, 20, 30, 40, 50];
+            const stolenAmount = amounts[Math.floor(Math.random() * amounts.length)];
+
+            if (pokeyen > 0) {
+                 const actualStolen = Math.min(pokeyen, stolenAmount);
+                 pokeyen -= actualStolen;
+                 message = `Too slow! Meowth stole ¥${actualStolen}!`;
+                 createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
+            } else {
+                 message = "Too slow! Meowth tried to steal, but you have no money!";
+            }
+            
+            document.getElementById("question-text").textContent = message;
+            updateAllCounters();
+            saveGameData();
+
+            setTimeout(() => {
+                meowthPopup.classList.add('hidden');
+                meowthPopup.classList.remove('fade-out');
+                meowthTextPopup.classList.add('hidden');
+                meowthTextPopup.classList.remove('fade-out');
                 document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
                 startRound();
             }, 4000);
