@@ -373,11 +373,19 @@ body {
 #pokedex-info-display {
   background: rgba(255,255,255,0.9);
   border-radius: 15px;
-  padding: 1rem;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  padding: 0;
+}
+
+/* Generic scroller for info panels (Achievements, Shop, etc.) */
+.info-panel-content-area {
+    height: 100%;
+    overflow-y: auto;
+    padding: 1rem 1rem 80px 1rem; /* Space for the fixed back button */
 }
 
 /* This is the scroller for the detailed pokemon view */
@@ -386,11 +394,13 @@ body {
     overflow-x: auto;
     overflow-y: hidden;
     gap: 1rem;
-    padding: 0.5rem;
-    margin: -0.5rem; /* Counteract padding to allow full-bleed scroll */
+    padding: 1rem 1rem 80px 1rem; /* Added padding for consistency */
+    margin: 0;
     flex-grow: 1;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    height: 100%;
 }
 
 /* A single pokemon's detail card in the scroller */
@@ -398,6 +408,10 @@ body {
     flex: 0 0 100%;
     scroll-snap-align: center;
     overflow-y: auto;
+    padding-bottom: 70px; /* Extra padding to not get cut off by buttons */
+}
+
+.pokedex-detail-card-inner {
     background: #f0f0f0;
     border-radius: 10px;
     padding: 1rem;
@@ -408,41 +422,16 @@ body {
     gap: 0.5rem;
 }
 
-.pokedex-detail-card h3 {
+
+.pokedex-detail-card-inner h3 {
     margin: 0;
     font-size: 1.4rem;
     text-transform: capitalize;
 }
 
-/* New styles for shiny detail card */
-.pokedex-detail-card.is-shiny {
+.pokedex-detail-card-inner.is-shiny {
     background: linear-gradient(145deg, #fff2a8, #ffd700);
     border-color: #f0c400;
-    position: relative;
-    overflow: hidden; /* Important for the shine effect */
-}
-
-/* The shine pseudo-element */
-.pokedex-detail-card.is-shiny::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        100deg,
-        rgba(255, 255, 255, 0) 20%,
-        rgba(255, 255, 255, 0.5) 50%,
-        rgba(255, 255, 255, 0) 80%
-    );
-    transform: translateX(-100%);
-    transition: transform 0.6s ease-in-out;
-}
-
-/* Trigger the shine on hover */
-.pokedex-detail-card.is-shiny:hover::before {
-    transform: translateX(100%);
 }
 
 .pokedex-detail-sprite-container {
@@ -457,7 +446,7 @@ body {
     box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.2);
 }
 
-.pokedex-detail-card img {
+.pokedex-detail-card-inner img {
     width: 90%;
     height: 90%;
     object-fit: contain;
@@ -467,23 +456,74 @@ body {
     image-rendering: crisp-edges;
 }
 
-.pokedex-detail-card img.shiny {
+.pokedex-detail-card-inner img.shiny {
     filter: drop-shadow(0 0 10px gold);
 }
 
-#stats-display {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+/* --- Accordion styles for stats inside the card --- */
+.stats-accordion {
+    width: 100%;
+    background: rgba(255,255,255,0.7);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
-#stats-display h3 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  text-align: center;
-  flex-shrink: 0;
+.stats-accordion-header {
+    background: rgba(0,0,0,0.05);
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+}
+.stats-accordion-header:last-of-type {
+    border-bottom: none;
+}
+
+.stats-accordion-header::after {
+    content: '▼';
+    font-size: 0.8em;
+    transition: transform 0.3s ease;
+}
+
+.stats-accordion-header.active::after {
+    transform: rotate(180deg);
+}
+
+.stats-accordion-content {
+    padding: 0 1rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+}
+.stats-accordion-content.show {
+    padding: 1rem;
+    max-height: 500px; /* Adjust as needed */
+    transition: max-height 0.5s ease-in, padding 0.5s ease-in;
+}
+.stats-accordion-content div {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #ddd;
+}
+.stats-accordion-content div:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Fixed button container */
+#back-button-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(to top, rgba(255, 255, 255, 0.95) 70%, rgba(255, 255, 255, 0));
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 #back-button {
@@ -496,7 +536,6 @@ body {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-top: 1rem;
   width: 100%;
   flex-shrink: 0;
 }
@@ -517,7 +556,6 @@ body {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin-top: 0.5rem;
     width: 100%;
 }
 
@@ -842,27 +880,6 @@ body {
     position: static;
     height: 100%; /* Fill its new parent */
     border-radius: 0;
-}
-
-/* 1-column layout for Pokédex entry stats */
-.stats-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.8rem;
-    text-align: left;
-    width: 100%;
-    background: rgba(255,255,255,0.7);
-    padding: 1rem;
-    border-radius: 10px;
-}
-
-.stats-grid div {
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #ddd;
-}
-
-.stats-grid div:last-child {
-    border-bottom: none;
 }
 
 /* Evolution Modal Styles */
@@ -3682,7 +3699,6 @@ body {
         if (isMenuOpen) return;
         isMenuOpen = true;
 
-        // Show the main info panel container
         document.querySelector('.game-container').classList.add('info-mode-active');
         document.getElementById('pokedex-device').classList.add('hidden');
         document.getElementById('pokedex-grid').classList.add('hidden');
@@ -3690,19 +3706,30 @@ body {
         
         const infoDisplay = document.getElementById('pokedex-info-display');
         infoDisplay.classList.remove('hidden');
-        infoDisplay.innerHTML = ''; // Clear it out
+        infoDisplay.innerHTML = '';
 
-        // Get the specific content for this panel
         const content = contentBuilder(builderArg);
         infoDisplay.appendChild(content);
 
-        // Add the back button
+        const backButtonContainer = document.createElement('div');
+        backButtonContainer.id = 'back-button-container';
+        
+        // Only the Pokedex view gets the Evolve button in this container
+        if (contentBuilder === buildPokedexScroller) {
+            // The evolve button is added dynamically inside buildPokedexScroller,
+            // but we can add a placeholder or handle its logic here if needed.
+            // For now, we'll let the card build it, and just add the back button.
+        }
+
         const backButton = document.createElement('button');
         backButton.id = 'back-button';
         backButton.textContent = 'Back to Game';
         backButton.onclick = exitPokedexView;
-        infoDisplay.appendChild(backButton);
+        backButtonContainer.appendChild(backButton);
+
+        infoDisplay.appendChild(backButtonContainer);
     }
+
 
     function exitPokedexView() {
       isMenuOpen = false;
@@ -3760,31 +3787,45 @@ body {
                 const shiny = unlocked[id] === 'shiny';
                 const card = document.createElement('div');
                 card.className = 'pokedex-detail-card';
-                if (shiny) {
-                    card.classList.add('is-shiny');
-                }
                 card.id = `detail-card-${id}`;
+
+                const cardInner = document.createElement('div');
+                cardInner.className = 'pokedex-detail-card-inner';
+                if (shiny) {
+                    cardInner.classList.add('is-shiny');
+                }
                 
                 const primaryType = p.type[0];
                 const typeColor = TYPE_COLORS[primaryType] || '#A8A878';
                 const secondaryColor = p.type.length > 1 ? TYPE_COLORS[p.type[1]] : typeColor;
 
-                card.innerHTML = `
+                cardInner.innerHTML = `
                     <h3>#${padId(p.id)} - ${p.name}${shiny ? ' ✨' : ''}</h3>
                     <div class="pokedex-detail-sprite-container" style="background: radial-gradient(circle, ${secondaryColor} 0%, ${typeColor} 100%);">
                         <img src="${getSpritePath(p.id, shiny)}" class="${shiny ? 'shiny' : ''}" alt="${p.name}">
                     </div>
-                    <div class="stats-grid">
-                        <div><strong>Type:</strong> ${p.type.join(", ")}</div>
-                        <div><strong>Ability:</strong> ${p.ability}</div>
-                        <div><strong>Height:</strong> ${p.height}</div>
-                        <div><strong>Weight:</strong> ${p.weight}</div>
-                        <div><strong>Egg group:</strong> ${p.egg_group}</div>
-                        <div><strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}</div>
-                        <div><strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}</div>
+                    <div class="stats-accordion">
+                        <div class="stats-accordion-header">Basic Info</div>
+                        <div class="stats-accordion-content">
+                            <div><strong>Type:</strong> ${p.type.join(", ")}</div>
+                            <div><strong>Ability:</strong> ${p.ability}</div>
+                            <div><strong>Egg group:</strong> ${p.egg_group}</div>
+                        </div>
+                        <div class="stats-accordion-header">Measurements</div>
+                        <div class="stats-accordion-content">
+                            <div><strong>Height:</strong> ${p.height}</div>
+                            <div><strong>Weight:</strong> ${p.weight}</div>
+                        </div>
+                        <div class="stats-accordion-header">Combat</div>
+                        <div class="stats-accordion-content">
+                           <div><strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}</div>
+                           <div><strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}</div>
+                        </div>
                     </div>
                 `;
                 
+                card.appendChild(cardInner);
+
                 // --- EVOLUTION LOGIC ---
                 const hasStone = bag.evolutionStone && bag.evolutionStone > 0;
                 const evolutionTarget = EVOLUTION_MAP[p.id];
@@ -3801,19 +3842,71 @@ body {
                             e.stopPropagation();
                             handleEvolution(p.id);
                         };
-                        card.appendChild(evolveButton);
+                        // The button is now part of the fixed container, find it and show it
+                        setTimeout(() => {
+                           const buttonContainer = document.querySelector(`#detail-card-${id} ~ #back-button-container`);
+                           if(buttonContainer && scroller.scrollLeft > (card.offsetLeft - card.offsetWidth/2) && scroller.scrollLeft < (card.offsetLeft + card.offsetWidth/2)) {
+                               if(!buttonContainer.querySelector('.evolve-button')) {
+                                   buttonContainer.prepend(evolveButton);
+                               }
+                           }
+                        }, 50);
                     }
                 }
                 
                 scroller.appendChild(card);
             });
         }
+        
+        scroller.addEventListener('scroll', () => {
+             const visibleCard = document.querySelector('.pokedex-detail-card[style*="visible"]');
+             const buttonContainer = document.getElementById('back-button-container');
+             if(buttonContainer.querySelector('.evolve-button')) {
+                 buttonContainer.querySelector('.evolve-button').remove();
+             }
+             
+             const cards = scroller.querySelectorAll('.pokedex-detail-card');
+             for(const card of cards) {
+                 const cardId = parseInt(card.id.replace('detail-card-', ''));
+                 const hasStone = bag.evolutionStone && bag.evolutionStone > 0;
+                 const evolutionTarget = EVOLUTION_MAP[cardId];
+                 
+                 if (hasStone && evolutionTarget && scroller.scrollLeft > (card.offsetLeft - card.offsetWidth/2) && scroller.scrollLeft < (card.offsetLeft + card.offsetWidth/2)) {
+                    const isTargetUnlocked = Array.isArray(evolutionTarget)
+                        ? evolutionTarget.every(evoId => unlocked[evoId])
+                        : unlocked[evolutionTarget];
+                    if(!isTargetUnlocked) {
+                        const evolveButton = document.createElement('button');
+                        evolveButton.className = 'evolve-button';
+                        evolveButton.textContent = 'Evolve';
+                        evolveButton.onclick = (e) => {
+                            e.stopPropagation();
+                            handleEvolution(cardId);
+                        };
+                        buttonContainer.prepend(evolveButton);
+                    }
+                 }
+             }
+        });
+        
+        // Add event listeners for the new accordions
+        setTimeout(() => {
+            scroller.querySelectorAll('.stats-accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    header.classList.toggle('active');
+                    content.classList.toggle('show');
+                });
+            });
+        }, 0);
+
 
         if (clickedPokemon) {
             setTimeout(() => {
                 const targetCard = document.getElementById(`detail-card-${clickedPokemon.id}`);
                 if (targetCard) {
                     targetCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+                    scroller.dispatchEvent(new Event('scroll')); // Trigger scroll to show evolve button
                 }
             }, 50);
         }
@@ -3910,7 +4003,7 @@ body {
 
     function buildAchievementsView() {
         const container = document.createElement('div');
-        container.id = 'stats-display';
+        container.className = 'info-panel-content-area';
         container.innerHTML = `<h3>🏆 Achievements</h3>`;
         const grid = document.createElement('div');
         grid.id = 'achievement-grid';
@@ -3938,7 +4031,7 @@ body {
 
     function buildShiniesView() {
         const container = document.createElement('div');
-        container.id = 'stats-display';
+        container.className = 'info-panel-content-area';
         container.innerHTML = `<h3>⭐ Your Shiny Pokémon</h3>`;
         const shinyIds = Object.keys(unlocked).filter(id => unlocked[id] === 'shiny');
 
@@ -3963,7 +4056,7 @@ body {
 
     function buildShopView() {
         const container = document.createElement('div');
-        container.id = 'stats-display';
+        container.className = 'info-panel-content-area';
         container.innerHTML = `<h3>🛒 Item Shop (Your balance: ¥${pokeyen})</h3>`;
         const grid = document.createElement('div');
         grid.id = 'item-display-grid';
@@ -4008,7 +4101,7 @@ body {
 
     function buildBagView() {
         const container = document.createElement('div');
-        container.id = 'stats-display';
+        container.className = 'info-panel-content-area';
         container.innerHTML = `<h3>🎒 Your Bag</h3>`;
         
         const itemKeys = Object.keys(bag).filter(key => bag[key] > 0);
