@@ -506,6 +506,33 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
+/* Evolve Button Style */
+.evolve-button {
+    background: linear-gradient(145deg, #8e44ad, #9b59b6);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 0.5rem;
+    width: 100%;
+}
+
+.evolve-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
+}
+
+.evolve-button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+
 /* CSS for Bonus Poké Balls */
 #bonus-pokeballs-container {
   display: flex;
@@ -838,6 +865,62 @@ body {
     border-bottom: none;
 }
 
+/* Evolution Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+.modal-content {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    text-align: center;
+    max-width: 90%;
+}
+.evolution-grid {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+.evolution-option {
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 10px;
+    transition: background-color 0.2s ease;
+}
+.evolution-option:hover {
+    background-color: #eee;
+}
+.evolution-option img {
+    width: 80px;
+    height: 80px;
+}
+.evolution-option p {
+    margin: 0.5rem 0 0 0;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+.modal-cancel-button {
+    background: linear-gradient(145deg, #ff6b6b, #ee5a52);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 480px) {
@@ -945,6 +1028,18 @@ body {
   <div id="rocket-text-popup" class="rocket-text-popup hidden">Blast Team Rocket!</div>
   <div id="meowth-popup" class="meowth-popup hidden">💰</div>
   <div id="meowth-text-popup" class="meowth-text-popup hidden">Stop Meowth!</div>
+  
+  <!-- Evolution Modal -->
+  <div id="evolution-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 id="evolution-modal-title">Evolve Eevee</h3>
+      <p>Choose an evolution:</p>
+      <div id="evolution-options-grid" class="evolution-grid">
+        <!-- Options will be added here by JS -->
+      </div>
+      <button id="evolution-cancel-button" class="modal-cancel-button">Cancel</button>
+    </div>
+  </div>
 
 
   <script id="pokedex-data" type="application/json">
@@ -2787,8 +2882,20 @@ body {
     const SHOP_ITEMS = {
         pokeball: { name: "Poké Ball", price: 100, description: "Use during a catch to skip 1 bonus question.", sprite: "sprites/pokeball.png", effect: 1 },
         greatball: { name: "Great Ball", price: 250, description: "Use during a catch to skip 2 bonus questions.", sprite: "sprites/greatball.png", effect: 2 },
-        ultraball: { name: "Ultra Ball", price: 500, description: "Use during a catch to skip all bonus questions.", sprite: "sprites/ultraball.png", effect: 3 }
+        ultraball: { name: "Ultra Ball", price: 500, description: "Use during a catch to skip all bonus questions.", sprite: "sprites/ultraball.png", effect: 3 },
+        evolutionStone: { name: "Evolution Stone", price: 750, description: "An experimental stone from Silph Co. that forces evolution.", sprite: "sprites/evolutionstone.png" }
     };
+    
+    const EVOLUTION_MAP = {
+        1: 2, 2: 3, 4: 5, 5: 6, 7: 8, 8: 9, 10: 11, 11: 12, 13: 14, 14: 15, 16: 17, 17: 18,
+        19: 20, 21: 22, 23: 24, 25: 26, 27: 28, 29: 30, 30: 31, 32: 33, 33: 34, 35: 36, 37: 38,
+        39: 40, 41: 42, 43: 44, 44: 45, 46: 47, 48: 49, 50: 51, 52: 53, 54: 55, 56: 57, 58: 59,
+        60: 61, 61: 62, 63: 64, 64: 65, 66: 67, 67: 68, 69: 70, 70: 71, 72: 73, 74: 75, 75: 76,
+        77: 78, 79: 80, 81: 82, 84: 85, 86: 87, 88: 89, 90: 91, 92: 93, 93: 94, 96: 97, 98: 99,
+        100: 101, 102: 103, 104: 105, 109: 110, 111: 112, 116: 117, 118: 119, 120: 121, 129: 130,
+        133: [134, 135, 136], 138: 139, 140: 141, 147: 148, 148: 149
+    };
+
 
     const ALL_ACHIEVEMENTS = {
         firstCatch:       { title: "First Steps", description: "Caught your first Pokémon!", icon: "👟", prize: 100 },
@@ -3020,7 +3127,7 @@ body {
         if (!gameAchievements.firstShiny && shinyCount >= 1) grantAchievement('firstShiny');
         if (!gameAchievements.shinyCollector && shinyCount >= 5) grantAchievement('shinyCollector');
         if (!gameAchievements.legendaryCatcher && [144, 145, 146, 150, 151].some(id => unlocked[id])) grantAchievement('legendaryCatcher');
-        if (!gameAchievements.eeveeMaster && [133, 134, 135, 136].every(id => unlocked[id])) grantAchievement('eeveeMaster');
+        if (!gameAchievements.eeveeMaster && [134, 135, 136].every(id => unlocked[id])) grantAchievement('eeveeMaster');
 
         // Type collector achievements
         const typeCounts = {};
@@ -3403,7 +3510,7 @@ body {
 
     function askNextBonusQuestion() {
       if (bonusIndex >= bonusQuestions.length) {
-        unlockPokemon();
+        unlockPokemon(currentPokemon.id, currentIsShinyRound);
         return;
       }
 
@@ -3507,9 +3614,11 @@ body {
       }
     }
 
-    function unlockPokemon() {
-      const isShiny = currentIsShinyRound;
-      unlocked[currentPokemon.id] = isShiny ? "shiny" : "normal";
+    function unlockPokemon(pokemonId, isShiny = false) {
+      const pokemonToUnlock = pokemonData.find(p => p.id === pokemonId);
+      if (!pokemonToUnlock) return;
+
+      unlocked[pokemonId] = isShiny ? "shiny" : "normal";
       
       if (isShiny) {
         sounds.shiny();
@@ -3524,7 +3633,7 @@ body {
       updateAllCounters();
 
       document.getElementById("question-text").textContent =
-        `Congratulations! You unlocked ${isShiny ? "a shiny" : "a"} ${currentPokemon.name}!`;
+        `Congratulations! You unlocked ${isShiny ? "a shiny" : "a"} ${pokemonToUnlock.name}!`;
       document.getElementById('answers-grid').innerHTML = '';
       setTimeout(startRound, 2500);
     }
@@ -3675,6 +3784,27 @@ body {
                         <div><strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}</div>
                     </div>
                 `;
+                
+                // --- EVOLUTION LOGIC ---
+                const hasStone = bag.evolutionStone && bag.evolutionStone > 0;
+                const evolutionTarget = EVOLUTION_MAP[p.id];
+                if (hasStone && evolutionTarget) {
+                    const isTargetUnlocked = Array.isArray(evolutionTarget)
+                        ? evolutionTarget.every(evoId => unlocked[evoId])
+                        : unlocked[evolutionTarget];
+
+                    if (!isTargetUnlocked) {
+                        const evolveButton = document.createElement('button');
+                        evolveButton.className = 'evolve-button';
+                        evolveButton.textContent = 'Evolve';
+                        evolveButton.onclick = (e) => {
+                            e.stopPropagation();
+                            handleEvolution(p.id);
+                        };
+                        card.appendChild(evolveButton);
+                    }
+                }
+                
                 scroller.appendChild(card);
             });
         }
@@ -3689,6 +3819,94 @@ body {
         }
         return scroller;
     }
+    
+    function handleEvolution(pokemonId) {
+        if (!bag.evolutionStone || bag.evolutionStone <= 0) return;
+
+        const sourcePokemon = pokemonData.find(p => p.id === pokemonId);
+        const evolutionTarget = EVOLUTION_MAP[pokemonId];
+
+        if (!sourcePokemon || !evolutionTarget) return;
+
+        // Handle Eevee's branched evolution
+        if (Array.isArray(evolutionTarget)) {
+            const availableEvolutions = evolutionTarget
+                .map(id => pokemonData.find(p => p.id === id))
+                .filter(p => p && !unlocked[p.id]);
+
+            if (availableEvolutions.length === 0) {
+                // This is a simple notification, so an alert is acceptable here.
+                alert("You have already unlocked all of Eevee's evolutions!");
+                return;
+            }
+            showEeveeChoiceModal(availableEvolutions);
+
+        } else {
+            // Handle standard evolution
+            const targetPokemon = pokemonData.find(p => p.id === evolutionTarget);
+            if (!targetPokemon) return;
+
+            if (confirm(`Are you sure you want to use an Evolution Stone to evolve ${sourcePokemon.name}?`)) {
+                performEvolution(targetPokemon.id);
+            }
+        }
+    }
+    
+    function showEeveeChoiceModal(availableEvolutions) {
+        const modal = document.getElementById('evolution-modal');
+        const grid = document.getElementById('evolution-options-grid');
+        const cancelButton = document.getElementById('evolution-cancel-button');
+        
+        grid.innerHTML = ''; // Clear previous options
+
+        availableEvolutions.forEach(p => {
+            const option = document.createElement('div');
+            option.className = 'evolution-option';
+            option.innerHTML = `
+                <img src="${getSpritePath(p.id)}" alt="${p.name}">
+                <p>${p.name}</p>
+            `;
+            option.onclick = () => {
+                modal.classList.add('hidden');
+                if (confirm(`Are you sure you want to use an Evolution Stone to evolve Eevee into ${p.name}?`)) {
+                    performEvolution(p.id);
+                }
+            };
+            grid.appendChild(option);
+        });
+
+        const closeModal = () => modal.classList.add('hidden');
+        cancelButton.onclick = closeModal;
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        };
+
+        modal.classList.remove('hidden');
+    }
+
+
+    function performEvolution(targetId) {
+        bag.evolutionStone--;
+        sounds.unlock();
+        createParticles(document.getElementById('game-particles'), 30, '#8e44ad');
+
+        const evolvedPokemon = pokemonData.find(p => p.id === targetId);
+        unlocked[targetId] = "normal"; // Evolutions are always normal, not shiny
+
+        saveGameData();
+        updateAllCounters();
+        updatePokedexUI();
+        checkAllAchievements();
+
+        // Refresh the view to show the new Pokémon
+        exitPokedexView();
+        setTimeout(() => {
+            openInfoPanel(buildPokedexScroller, evolvedPokemon);
+        }, 100);
+    }
+
 
     function buildAchievementsView() {
         const container = document.createElement('div');
@@ -3803,6 +4021,7 @@ body {
 
             itemKeys.forEach(key => {
                 const item = SHOP_ITEMS[key];
+                if (!item) return; // Skip if item is no longer in shop
                 const card = document.createElement('div');
                 card.className = 'item-grid-entry';
                 
@@ -3812,7 +4031,8 @@ body {
                     <p>${item.description}</p>
                     <div class="item-count">x${bag[key]}</div>
                 `;
-                if (gameMode === 'bonus') {
+                // Only allow using pokeballs during the bonus round
+                if (gameMode === 'bonus' && item.effect) {
                     card.classList.add('can-use');
                     card.onclick = () => useItem(key);
                 } else {
@@ -3828,10 +4048,12 @@ body {
     function useItem(key) {
       if (!bag[key] || bag[key] <= 0) return;
 
+      const item = SHOP_ITEMS[key];
+      if (!item.effect) return; // Can't use evolution stone this way
+
       sounds.correct(); 
 
       bag[key]--;
-      const item = SHOP_ITEMS[key];
       
       for(let i=0; i<item.effect; i++) {
           if (bonusIndex < bonusQuestions.length) {
@@ -3847,6 +4069,8 @@ body {
       updateAllCounters();
       
       exitPokedexView();
+      // After exiting, the bonus round will resume and check if it should skip to unlock
+      setTimeout(askNextBonusQuestion, 200);
     }
 
     function setupInitialView() {
