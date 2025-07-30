@@ -882,7 +882,7 @@ body {
     border-radius: 0;
 }
 
-/* Evolution Modal Styles */
+/* Evolution & Confirmation Modal Styles */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -903,6 +903,20 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     text-align: center;
     max-width: 90%;
+}
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+.modal-buttons button {
+    padding: 0.6rem 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    border: none;
+    min-width: 100px;
 }
 .evolution-grid {
     display: flex;
@@ -931,11 +945,6 @@ body {
 .modal-cancel-button {
     background: linear-gradient(145deg, #ff6b6b, #ee5a52);
     color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.6rem 1.2rem;
-    font-weight: bold;
-    cursor: pointer;
 }
 
 
@@ -1055,6 +1064,18 @@ body {
         <!-- Options will be added here by JS -->
       </div>
       <button id="evolution-cancel-button" class="modal-cancel-button">Cancel</button>
+    </div>
+  </div>
+  
+  <!-- Generic Confirmation Modal -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 id="confirm-modal-title">Confirm</h3>
+      <p id="confirm-modal-text">Are you sure?</p>
+      <div class="modal-buttons">
+          <button id="confirm-modal-cancel" class="modal-cancel-button">Cancel</button>
+          <button id="confirm-modal-ok" class="evolve-button">Confirm</button>
+      </div>
     </div>
   </div>
 
@@ -3928,8 +3949,7 @@ body {
                 .filter(p => p && !unlocked[p.id]);
 
             if (availableEvolutions.length === 0) {
-                // This is a simple notification, so an alert is acceptable here.
-                alert("You have already unlocked all of Eevee's evolutions!");
+                showCustomAlert("You have already unlocked all of Eevee's evolutions!");
                 return;
             }
             showEeveeChoiceModal(availableEvolutions);
@@ -3938,13 +3958,34 @@ body {
             // Handle standard evolution
             const targetPokemon = pokemonData.find(p => p.id === evolutionTarget);
             if (!targetPokemon) return;
-
-            if (confirm(`Are you sure you want to use an Evolution Stone to evolve ${sourcePokemon.name}?`)) {
-                performEvolution(targetPokemon.id);
-            }
+            
+            showEvolutionConfirmModal(sourcePokemon, targetPokemon);
         }
     }
     
+    function showEvolutionConfirmModal(sourcePokemon, targetPokemon) {
+        const modal = document.getElementById('confirm-modal');
+        const title = document.getElementById('confirm-modal-title');
+        const text = document.getElementById('confirm-modal-text');
+        const okButton = document.getElementById('confirm-modal-ok');
+        const cancelButton = document.getElementById('confirm-modal-cancel');
+
+        title.textContent = 'Confirm Evolution';
+        text.textContent = `Are you sure you want to use an Evolution Stone to evolve ${sourcePokemon.name}?`;
+        okButton.textContent = 'Evolve';
+
+        const close = () => modal.classList.add('hidden');
+
+        okButton.onclick = () => {
+            close();
+            performEvolution(targetPokemon.id);
+        };
+        cancelButton.onclick = close;
+        modal.onclick = (e) => { if (e.target === modal) close(); };
+
+        modal.classList.remove('hidden');
+    }
+
     function showEeveeChoiceModal(availableEvolutions) {
         const modal = document.getElementById('evolution-modal');
         const grid = document.getElementById('evolution-options-grid');
@@ -3961,9 +4002,8 @@ body {
             `;
             option.onclick = () => {
                 modal.classList.add('hidden');
-                if (confirm(`Are you sure you want to use an Evolution Stone to evolve Eevee into ${p.name}?`)) {
-                    performEvolution(p.id);
-                }
+                const sourceEevee = pokemonData.find(pk => pk.id === 133);
+                showEvolutionConfirmModal(sourceEevee, p);
             };
             grid.appendChild(option);
         });
