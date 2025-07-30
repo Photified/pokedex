@@ -587,6 +587,39 @@ body {
   color: white;
 }
 
+/* Team Rocket Quick-Time Event */
+.rocket-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 100px;
+  cursor: pointer;
+  z-index: 500;
+  animation: rocket-enter 0.2s ease-out forwards, rocket-shake 0.5s 0.2s linear infinite;
+  text-shadow: 0 5px 15px rgba(0,0,0,0.4);
+}
+
+.rocket-popup.fade-out {
+    animation: rocket-leave 0.2s ease-in forwards;
+}
+
+@keyframes rocket-enter {
+  from { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+@keyframes rocket-leave {
+  from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  to { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+}
+
+@keyframes rocket-shake {
+  0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+  25% { transform: translate(-52%, -48%) rotate(-5deg); }
+  75% { transform: translate(-48%, -52%) rotate(5deg); }
+}
+
 /* CSS for Clickable Views */
 #achievements-button, #shinies-button, #shop-button, #bag-button {
   cursor: pointer;
@@ -838,6 +871,8 @@ body {
     <h3 style="margin: 0 0 0.5rem 0;">🏆 Achievement Unlocked!</h3>
     <p id="achievement-text" style="margin: 0;"></p>
   </div>
+  
+  <div id="rocket-popup" class="rocket-popup hidden">🚀</div>
 
   <script id="pokedex-data" type="application/json">
 [
@@ -3039,40 +3074,75 @@ body {
       saveGameData();
     }
     
+    let rocketTimer = null;
+
     function handleTeamRocket() {
-      gameMode = 'rocket';
-      sounds.rocket();
-      
-      document.getElementById('pokedex-device').classList.add('team-rocket-mode');
-      const pokemonImg = document.getElementById("pokemon-image");
-      pokemonImg.src = "sprites/pokemon_000.png";
-      pokemonImg.style.transform = 'scale(0.90)'; 
-      pokemonImg.style.filter = '';
-      pokemonImg.classList.remove('shiny');
-      document.getElementById('answers-grid').innerHTML = '';
-      
-      const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
-      let message;
+        gameMode = 'rocket';
+        sounds.rocket();
+        
+        document.getElementById('pokedex-device').classList.add('team-rocket-mode');
+        const pokemonImg = document.getElementById("pokemon-image");
+        pokemonImg.src = "sprites/pokemon_000.png";
+        pokemonImg.style.transform = 'scale(0.90)'; 
+        pokemonImg.style.filter = '';
+        pokemonImg.classList.remove('shiny');
+        document.getElementById('answers-grid').innerHTML = '';
+        document.getElementById("question-text").textContent = "Team Rocket is attacking!";
 
-      if (Object.keys(unlocked).length >= 5 && Math.random() < 0.75 && normalKeys.length > 0) {
-        const stealId = parseInt(normalKeys[Math.floor(Math.random() * normalKeys.length)], 10);
-        const stolenName = pokemonData.find(p => p.id === stealId)?.name || `Pokémon #${stealId}`;
-        delete unlocked[stealId];
-        saveGameData();
-        updatePokedexUI();
-        updateAllCounters();
-        message = `Team Rocket stole your ${stolenName}!`;
-        createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
-      } else {
-        message = "Team Rocket tried to steal a Pokémon, but failed!";
-      }
+        const rocketPopup = document.getElementById('rocket-popup');
+        let clickedRocket = false;
 
-      document.getElementById("question-text").textContent = message;
+        const onRocketClick = () => {
+            clickedRocket = true;
+            clearTimeout(rocketTimer);
+            rocketPopup.removeEventListener('click', onRocketClick);
+            rocketPopup.classList.add('fade-out');
+            
+            document.getElementById("question-text").textContent = "You stopped Team Rocket!";
+            
+            setTimeout(() => {
+                rocketPopup.classList.add('hidden');
+                rocketPopup.classList.remove('fade-out');
+                document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
+                startRound();
+            }, 2000);
+        };
 
-      setTimeout(() => {
-        document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
-        startRound();
-      }, 4000);
+        rocketPopup.addEventListener('click', onRocketClick);
+        rocketPopup.classList.remove('hidden');
+
+        rocketTimer = setTimeout(() => {
+            if (clickedRocket) return;
+            
+            rocketPopup.removeEventListener('click', onRocketClick);
+            rocketPopup.classList.add('fade-out');
+
+            let message;
+            const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
+
+            if (Object.keys(unlocked).length >= 5 && Math.random() < 0.75 && normalKeys.length > 0) {
+                const stealId = parseInt(normalKeys[Math.floor(Math.random() * normalKeys.length)], 10);
+                const stolenName = pokemonData.find(p => p.id === stealId)?.name || `Pokémon #${stealId}`;
+                delete unlocked[stealId];
+                saveGameData();
+                updatePokedexUI();
+                updateAllCounters();
+                message = `You were too slow! Team Rocket stole your ${stolenName}!`;
+                createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
+            } else {
+                message = "You were too slow, but Team Rocket failed to steal a Pokémon!";
+            }
+            
+            document.getElementById("question-text").textContent = message;
+
+            setTimeout(() => {
+                rocketPopup.classList.add('hidden');
+                rocketPopup.classList.remove('fade-out');
+                document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
+                startRound();
+            }, 4000);
+
+        }, 2000); // 2-second window
     }
 
     function startBonusRound() {
