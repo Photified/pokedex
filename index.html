@@ -604,6 +604,36 @@ body {
     animation: rocket-leave 0.2s ease-in forwards;
 }
 
+.rocket-text-popup {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(220, 20, 60, 0.9);
+    color: white;
+    padding: 3rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    z-index: 500;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.4);
+    text-align: center;
+    animation: rocket-text-enter 0.3s ease-out forwards;
+}
+
+.rocket-text-popup.fade-out {
+    animation: rocket-text-leave 0.3s ease-in forwards;
+}
+
+@keyframes rocket-text-enter {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes rocket-text-leave {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(100%); opacity: 0; }
+}
+
 @keyframes rocket-enter {
   from { transform: translate(-50%, -50%) scale(0); opacity: 0; }
   to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
@@ -873,6 +903,7 @@ body {
   </div>
   
   <div id="rocket-popup" class="rocket-popup hidden">🚀</div>
+  <div id="rocket-text-popup" class="rocket-text-popup hidden">Blast Team Rocket!</div>
 
   <script id="pokedex-data" type="application/json">
 [
@@ -3003,7 +3034,7 @@ body {
       document.getElementById('pokemon-display').classList.remove('energy-burst');
       
       if (!isResume) {
-        if (!lastRocket && Math.random() < 0.10) {
+        if (!lastRocket && Math.random() < 0.2) {
             lastRocket = true;
             handleTeamRocket();
             return;
@@ -3090,6 +3121,7 @@ body {
         document.getElementById("question-text").textContent = "Team Rocket is attacking!";
 
         const rocketPopup = document.getElementById('rocket-popup');
+        const rocketTextPopup = document.getElementById('rocket-text-popup');
         let clickedRocket = false;
 
         // Randomize position
@@ -3104,12 +3136,15 @@ body {
             clearTimeout(rocketTimer);
             rocketPopup.removeEventListener('click', onRocketClick);
             rocketPopup.classList.add('fade-out');
+            rocketTextPopup.classList.add('fade-out');
             
             document.getElementById("question-text").textContent = "You stopped Team Rocket!";
             
             setTimeout(() => {
                 rocketPopup.classList.add('hidden');
                 rocketPopup.classList.remove('fade-out');
+                rocketTextPopup.classList.add('hidden');
+                rocketTextPopup.classList.remove('fade-out');
                 document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
                 startRound();
             }, 2000);
@@ -3117,12 +3152,14 @@ body {
 
         rocketPopup.addEventListener('click', onRocketClick);
         rocketPopup.classList.remove('hidden');
+        rocketTextPopup.classList.remove('hidden');
 
         rocketTimer = setTimeout(() => {
             if (clickedRocket) return;
             
             rocketPopup.removeEventListener('click', onRocketClick);
             rocketPopup.classList.add('fade-out');
+            rocketTextPopup.classList.add('fade-out');
 
             let message;
             const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
@@ -3145,11 +3182,13 @@ body {
             setTimeout(() => {
                 rocketPopup.classList.add('hidden');
                 rocketPopup.classList.remove('fade-out');
+                rocketTextPopup.classList.add('hidden');
+                rocketTextPopup.classList.remove('fade-out');
                 document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
                 startRound();
             }, 4000);
 
-        }, 2000); // 2-second window
+        }, 1500); // 1.5-second window
     }
 
     function startBonusRound() {
@@ -3685,4 +3724,4 @@ body {
     initGame();
   </script>
 </body>
-</html
+</html>
