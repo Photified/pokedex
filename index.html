@@ -3092,6 +3092,13 @@ body {
         const rocketPopup = document.getElementById('rocket-popup');
         let clickedRocket = false;
 
+        // Randomize position
+        // Clamp between 15% and 85% to avoid edges
+        const randomTop = Math.random() * 70 + 15; 
+        const randomLeft = Math.random() * 70 + 15;
+        rocketPopup.style.top = `${randomTop}vh`;
+        rocketPopup.style.left = `${randomLeft}vw`;
+
         const onRocketClick = () => {
             clickedRocket = true;
             clearTimeout(rocketTimer);
@@ -3678,4 +3685,4 @@ body {
     initGame();
   </script>
 </body>
-</html>
+</html
