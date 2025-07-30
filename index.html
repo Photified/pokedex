@@ -413,6 +413,37 @@ body {
     text-transform: capitalize;
 }
 
+/* New styles for shiny detail card */
+.pokedex-detail-card.is-shiny {
+    background: linear-gradient(145deg, #fff2a8, #ffd700);
+    border-color: #f0c400;
+    position: relative;
+    overflow: hidden; /* Important for the shine effect */
+}
+
+/* The shine pseudo-element */
+.pokedex-detail-card.is-shiny::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        100deg,
+        rgba(255, 255, 255, 0) 20%,
+        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0) 80%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s ease-in-out;
+}
+
+/* Trigger the shine on hover */
+.pokedex-detail-card.is-shiny:hover::before {
+    transform: translateX(100%);
+}
+
 .pokedex-detail-sprite-container {
     width: clamp(192px, 50vmin, 250px);
     height: clamp(192px, 50vmin, 250px);
@@ -3320,6 +3351,9 @@ body {
                 const shiny = unlocked[id] === 'shiny';
                 const card = document.createElement('div');
                 card.className = 'pokedex-detail-card';
+                if (shiny) {
+                    card.classList.add('is-shiny');
+                }
                 card.id = `detail-card-${id}`;
                 
                 const primaryType = p.type[0];
@@ -3573,4 +3607,4 @@ body {
     initGame();
   </script>
 </body>
-</html>
+</html
