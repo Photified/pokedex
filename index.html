@@ -245,7 +245,7 @@ body {
   background: #333;
 }
 
-/* CORRECTED LAYOUT WRAPPER */
+/* LAYOUT WRAPPER */
 #bottom-content-area {
   flex-shrink: 0;
   min-height: 240px;
@@ -366,7 +366,8 @@ body {
 }
 
 .pokemon-card {
-  flex: 0 0 80px;
+  flex: 0 0 auto;
+  width: 80px;
   text-align: center;
   background: rgba(255,255,255,0.9);
   border-radius: 10px;
@@ -412,41 +413,22 @@ body {
   border-radius: 15px;
   padding: 1rem;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 #stats-display {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   line-height: 1.5;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden; /* Hide overflow here */
-}
-
-/* The individual content grids are now responsible for scrolling */
-#achievement-grid, #shiny-grid, #item-display-grid, .stats-grid {
-    overflow-y: auto; /* Make the grid itself the scrollable element */
-    flex-grow: 1;
+  flex: 1; /* Key for scrolling: allows this area to grow */
+  min-height: 0; /* Key for scrolling: allows flex item to shrink */
+  overflow: hidden; 
 }
 
 #stats-display h3 {
   margin-top: 0;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   text-align: center;
   flex-shrink: 0;
 }
-
-/* 2-column layout for Pokédex entry stats */
-.stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem 1.5rem; /* row-gap column-gap */
-    text-align: left;
-}
-
 
 #back-button {
   background: linear-gradient(145deg, #ff6b6b, #ee5a52);
@@ -559,12 +541,20 @@ body {
   background: rgba(255,255,255,0.2);
 }
 
-/* STYLES FOR ACHIEVEMENT GRID */
-#achievement-grid {
+/* HORIZONTAL SCROLLING GRID STYLES */
+#achievement-grid, #item-display-grid, #shiny-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(3, auto);
     gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 1rem; /* Space for scrollbar */
+    justify-content: flex-start;
+    align-items: start;
+    height: 100%;
 }
+
 .achievement-entry {
   display: flex;
   align-items: center;
@@ -573,6 +563,8 @@ body {
   background: rgba(0,0,0,0.03);
   border: 1px solid #ddd;
   border-radius: 10px;
+  width: 170px; /* Set fixed width */
+  height: 95%; /* Fill row height */
 }
 .achievement-entry .icon {
   font-size: 1.2rem;
@@ -592,20 +584,16 @@ body {
   filter: grayscale(1);
 }
 
-
-/* CSS for the Shiny Pokémon Grid */
-#shiny-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  padding: 1rem 0;
-}
 .shiny-grid-item {
   background: rgba(0,0,0,0.05);
   border-radius: 10px;
   padding: 5px;
   text-align: center;
+  width: 90px; /* Set fixed width */
+  height: 95%; /* Fill row height */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 .shiny-grid-item img {
   width: 70px;
@@ -619,23 +607,18 @@ body {
   font-weight: bold;
 }
 
-/* Styles for vertical Shop and Bag */
-#item-display-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    padding: 0.5rem 0;
-}
 .item-grid-entry {
     background: white;
     border: 1px solid #ddd;
     border-radius: 10px;
-    padding: 1rem;
+    padding: 0.5rem;
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     display: flex;
     flex-direction: column;
     transition: all 0.2s ease;
+    width: 140px; /* Set fixed width */
+    height: 95%; /* Fill row height */
 }
 .item-grid-entry.can-buy:hover, .item-grid-entry.can-use:hover {
   transform: translateY(-3px);
@@ -646,7 +629,7 @@ body {
 
 .item-grid-entry img { width: 50px; height: 50px; margin: 0 auto 0.5rem; }
 .item-grid-entry h4 { margin: 0 0 0.5rem 0; font-size: 0.9rem; }
-.item-grid-entry p { margin: 0 0 0.8rem 0; font-size: 0.75rem; color: #555; flex-grow: 1; }
+.item-grid-entry p { margin: 0 0 0.4rem 0; font-size: 0.75rem; color: #555; flex-grow: 1; }
 .item-grid-entry .price, .item-grid-entry .item-count { font-weight: bold; color: #333; font-size: 1rem; margin-bottom: 0.5rem; }
 .item-grid-entry .buy-button {
     background: linear-gradient(145deg, #4ecdc4, #44a08d);
@@ -658,6 +641,7 @@ body {
     font-weight: bold;
     transition: background-color 0.2s;
     width: 100%;
+    margin-top: auto;
 }
 .item-grid-entry .buy-button:disabled { background: #aaa; cursor: not-allowed; }
 
@@ -673,6 +657,15 @@ body {
 .game-container.info-mode-active #pokedex-info-display {
     position: static;
     height: 100%; /* Fill its new parent */
+    border-radius: 0;
+}
+
+/* 2-column layout for Pokédex entry stats */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem 1.5rem; /* row-gap column-gap */
+    text-align: left;
 }
 
 
@@ -682,8 +675,6 @@ body {
   .stat-item { font-size: 0.7rem; padding: 0.2rem 0.4rem; }
   .question-text { font-size: 1rem; padding: 0.8rem; }
   .answer-button { font-size: 1rem; padding: 0.8rem; }
-  #achievement-grid { grid-template-columns: 1fr; }
-  #item-display-grid { grid-template-columns: 1fr; }
 }
 
 /* Hide elements initially */
@@ -3255,24 +3246,7 @@ body {
         document.getElementById('pokedex-grid').classList.remove('hidden');
         document.getElementById('question-answers-area').classList.remove('hidden');
         document.getElementById('pokedex-info-display').classList.add('hidden');
-        
-        // Redraw the round using the stored currentPokemon and currentOptions
-        const pokemonImg = document.getElementById("pokemon-image");
-        pokemonImg.src = getSilhouettePath(currentPokemon.id);
-        pokemonImg.style.filter = 'brightness(0) drop-shadow(2px 2px 4px rgba(0,0,0,0.3))';
-        pokemonImg.classList.remove('shiny');
-        
-        document.getElementById("question-text").textContent = "Who's that Pokémon?";
-        
-        const answersGrid = document.getElementById("answers-grid");
-        answersGrid.innerHTML = "";
-        currentOptions.forEach(name => {
-            const btn = document.createElement("button");
-            btn.className = "answer-button";
-            btn.textContent = name;
-            btn.onclick = () => handleGuess(name, btn);
-            answersGrid.appendChild(btn);
-        });
+        startRound(true); // Call startRound in resume mode
     }
 
     function exitPokedexView() {
