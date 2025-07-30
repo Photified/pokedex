@@ -413,14 +413,74 @@ body {
   border-radius: 15px;
   padding: 1rem;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* This is the scroller for the detailed pokemon view */
+#pokedex-details-scroller {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 1rem;
+    padding: 0.5rem;
+    margin: -0.5rem; /* Counteract padding to allow full-bleed scroll */
+    flex-grow: 1;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* A single pokemon's detail card in the scroller */
+.pokedex-detail-card {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    overflow-y: auto;
+    background: #f0f0f0;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 2px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pokedex-detail-card h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    text-transform: capitalize;
+}
+
+.pokedex-detail-sprite-container {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    border: 5px solid white;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 5px 10px rgba(0,0,0,0.2);
+}
+
+.pokedex-detail-card img {
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+    margin: 0;
+}
+
+.pokedex-detail-card img.shiny {
+    filter: drop-shadow(0 0 10px gold);
 }
 
 #stats-display {
   font-size: 0.9rem;
   line-height: 1.5;
-  flex: 1; /* Key for scrolling: allows this area to grow */
-  min-height: 0; /* Key for scrolling: allows flex item to shrink */
-  overflow: hidden; 
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 #stats-display h3 {
@@ -660,12 +720,25 @@ body {
     border-radius: 0;
 }
 
-/* 2-column layout for Pokédex entry stats */
+/* 1-column layout for Pokédex entry stats */
 .stats-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem 1.5rem; /* row-gap column-gap */
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
     text-align: left;
+    width: 100%;
+    background: rgba(255,255,255,0.7);
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.stats-grid div {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.stats-grid div:last-child {
+    border-bottom: none;
 }
 
 
@@ -763,8 +836,7 @@ body {
       </div>
 
       <div id="pokedex-info-display" class="hidden">
-        <div id="stats-display"></div>
-        <button id="back-button">Back to Game</button>
+        <!-- Content for info panels is generated dynamically -->
       </div>
     </div>
 
@@ -3188,7 +3260,7 @@ body {
           if (p) {
             label.textContent = shiny ? `${p.name} ✨` : p.name;
             card.style.cursor = "pointer";
-            card.onclick = () => showPokedexEntry(p);
+            card.onclick = () => openInfoPanel(buildPokedexScroller, p);
           } else {
             label.textContent = `#${i}`;
           }
@@ -3207,67 +3279,57 @@ body {
 
     // --- VIEW SWITCHING LOGIC ---
 
-    function showPokedexEntry(p) {
-      if (isMenuOpen) return;
-      isMenuOpen = true;
-      
-      document.querySelector('.game-container').classList.remove('info-mode-active');
-      document.getElementById('pokedex-device').classList.remove('hidden');
-      document.getElementById('pokedex-grid').classList.add('hidden');
-      document.getElementById('question-answers-area').classList.add('hidden');
-      document.getElementById('pokedex-info-display').classList.remove('hidden');
-      
-      const pokemonImg = document.getElementById("pokemon-image");
-      const shiny = unlocked[p.id] === "shiny";
-      pokemonImg.src = getSpritePath(p.id, shiny);
-      pokemonImg.style.filter = '';
-      pokemonImg.style.transform = 'scale(1.20)';
-      pokemonImg.classList.toggle('shiny', shiny);
-      
-      document.getElementById('pokemon-display').classList.remove('energy-burst');
-      
-      const statsDisplay = document.getElementById('stats-display');
-      statsDisplay.innerHTML = `<h3>${p.name.toUpperCase()}${shiny ? ' ✨' : ''}</h3>` +
-        `<div class="stats-grid">` +
-          `<div><strong>Height:</strong> ${p.height}</div>` +
-          `<div><strong>Weight:</strong> ${p.weight}</div>` +
-          `<div><strong>Type:</strong> ${p.type.join(", ")}</div>` +
-          `<div><strong>Ability:</strong> ${p.ability}</div>` +
-          `<div><strong>Egg group:</strong> ${p.egg_group}</div>` +
-          `<div><strong>Pokédex #:</strong> ${p.id}</div>` +
-          `<div style="grid-column: 1 / -1;"><strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}</div>` +
-          `<div style="grid-column: 1 / -1;"><strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}</div>` +
-        `</div>`;
-    }
-    
-    function resumeMainRound() {
-        document.querySelector('.game-container').classList.remove('info-mode-active');
-        document.getElementById('pokedex-device').classList.remove('hidden');
-        document.getElementById('pokedex-grid').classList.remove('hidden');
-        document.getElementById('question-answers-area').classList.remove('hidden');
-        document.getElementById('pokedex-info-display').classList.add('hidden');
-        startRound(true); // Call startRound in resume mode
+    function openInfoPanel(contentBuilder, builderArg = null) {
+        if (isMenuOpen) return;
+        isMenuOpen = true;
+
+        // Show the main info panel container
+        document.querySelector('.game-container').classList.add('info-mode-active');
+        document.getElementById('pokedex-device').classList.add('hidden');
+        document.getElementById('pokedex-grid').classList.add('hidden');
+        document.getElementById('question-answers-area').classList.add('hidden');
+        
+        const infoDisplay = document.getElementById('pokedex-info-display');
+        infoDisplay.classList.remove('hidden');
+        infoDisplay.innerHTML = ''; // Clear it out
+
+        // Get the specific content for this panel
+        const content = contentBuilder(builderArg);
+        infoDisplay.appendChild(content);
+
+        // Add the back button
+        const backButton = document.createElement('button');
+        backButton.id = 'back-button';
+        backButton.textContent = 'Back to Game';
+        backButton.onclick = exitPokedexView;
+        infoDisplay.appendChild(backButton);
     }
 
     function exitPokedexView() {
       isMenuOpen = false;
       
-      if (gameMode === 'bonus') {
-        resumeBonusRound();
-      } else if (gameMode === 'main') {
-        resumeMainRound();
+      document.querySelector('.game-container').classList.remove('info-mode-active');
+      document.getElementById('pokedex-info-display').classList.add('hidden');
+      
+      if (gameMode === 'initial') {
+        setupInitialView();
       } else {
-        startRound();
+        document.getElementById('pokedex-device').classList.remove('hidden');
+        document.getElementById('pokedex-grid').classList.remove('hidden');
+        document.getElementById('question-answers-area').classList.remove('hidden');
+        if (gameMode === 'bonus') {
+            resumeBonusRound();
+        } else if (gameMode === 'main') {
+            resumeMainRound();
+        }
       }
     }
     
+    function resumeMainRound() {
+        startRound(true); // Call startRound in resume mode
+    }
+    
     function resumeBonusRound() {
-        document.querySelector('.game-container').classList.remove('info-mode-active');
-        document.getElementById('pokedex-device').classList.remove('hidden');
-        document.getElementById('pokedex-grid').classList.remove('hidden'); 
-        document.getElementById('question-answers-area').classList.remove('hidden');
-        document.getElementById('pokedex-info-display').classList.add('hidden');
-        
         const pokemonImg = document.getElementById("pokemon-image");
         pokemonImg.src = getSpritePath(currentPokemon.id, currentIsShinyRound);
         pokemonImg.style.filter = '';
@@ -3275,23 +3337,70 @@ body {
         
         askNextBonusQuestion();
     }
+    
+    const TYPE_COLORS = {
+        'Normal': '#A8A878', 'Fire': '#F08030', 'Water': '#6890F0', 'Electric': '#F8D030',
+        'Grass': '#78C850', 'Ice': '#98D8D8', 'Fighting': '#C03028', 'Poison': '#A040A0',
+        'Ground': '#E0C068', 'Flying': '#A890F0', 'Psychic': '#F85888', 'Bug': '#A8B820',
+        'Rock': '#B8A038', 'Ghost': '#705898', 'Dragon': '#7038F8', 'Steel': '#B8B8D0', 'Fairy': '#EE99AC'
+    };
 
-    function showInfoScreen(buildFunction) {
-        if (isMenuOpen) return;
-        isMenuOpen = true;
-        
-        document.querySelector('.game-container').classList.add('info-mode-active');
-        document.getElementById('pokedex-device').classList.add('hidden');
-        document.getElementById('pokedex-grid').classList.add('hidden');
-        document.getElementById('question-answers-area').classList.add('hidden');
-        document.getElementById('pokedex-info-display').classList.remove('hidden');
-        
-        buildFunction();
+    function buildPokedexScroller(clickedPokemon) {
+        const scroller = document.createElement('div');
+        scroller.id = 'pokedex-details-scroller';
+
+        const unlockedIds = Object.keys(unlocked).map(id => parseInt(id)).sort((a, b) => a - b);
+
+        if (unlockedIds.length === 0) {
+            scroller.innerHTML = `<p style="text-align:center; align-self:center; width:100%;">You haven't caught any Pokémon yet!</p>`;
+        } else {
+            unlockedIds.forEach(id => {
+                const p = pokemonData.find(pokemon => pokemon.id === id);
+                if (!p) return;
+
+                const shiny = unlocked[id] === 'shiny';
+                const card = document.createElement('div');
+                card.className = 'pokedex-detail-card';
+                card.id = `detail-card-${id}`;
+                
+                const primaryType = p.type[0];
+                const typeColor = TYPE_COLORS[primaryType] || '#A8A878';
+                const secondaryColor = p.type.length > 1 ? TYPE_COLORS[p.type[1]] : typeColor;
+
+                card.innerHTML = `
+                    <h3>#${padId(p.id)} - ${p.name}${shiny ? ' ✨' : ''}</h3>
+                    <div class="pokedex-detail-sprite-container" style="background: radial-gradient(circle, ${secondaryColor} 0%, ${typeColor} 100%);">
+                        <img src="${getSpritePath(p.id, shiny)}" class="${shiny ? 'shiny' : ''}" alt="${p.name}">
+                    </div>
+                    <div class="stats-grid">
+                        <div><strong>Type:</strong> ${p.type.join(", ")}</div>
+                        <div><strong>Ability:</strong> ${p.ability}</div>
+                        <div><strong>Height:</strong> ${p.height}</div>
+                        <div><strong>Weight:</strong> ${p.weight}</div>
+                        <div><strong>Egg group:</strong> ${p.egg_group}</div>
+                        <div><strong>Super effective:</strong> ${p.super_effective.join(", ") || "None"}</div>
+                        <div><strong>Weak against:</strong> ${p.weak_against.join(", ") || "None"}</div>
+                    </div>
+                `;
+                scroller.appendChild(card);
+            });
+        }
+
+        if (clickedPokemon) {
+            setTimeout(() => {
+                const targetCard = document.getElementById(`detail-card-${clickedPokemon.id}`);
+                if (targetCard) {
+                    targetCard.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+                }
+            }, 50);
+        }
+        return scroller;
     }
 
     function buildAchievementsView() {
-        const statsDisplay = document.getElementById('stats-display');
-        statsDisplay.innerHTML = `<h3>🏆 Achievements</h3>`;
+        const container = document.createElement('div');
+        container.id = 'stats-display';
+        container.innerHTML = `<h3>🏆 Achievements</h3>`;
         const grid = document.createElement('div');
         grid.id = 'achievement-grid';
 
@@ -3312,16 +3421,18 @@ body {
                 </div>`;
             grid.appendChild(entry);
         }
-        statsDisplay.appendChild(grid);
+        container.appendChild(grid);
+        return container;
     }
 
     function buildShiniesView() {
-        const statsDisplay = document.getElementById('stats-display');
-        statsDisplay.innerHTML = `<h3>⭐ Your Shiny Pokémon</h3>`;
+        const container = document.createElement('div');
+        container.id = 'stats-display';
+        container.innerHTML = `<h3>⭐ Your Shiny Pokémon</h3>`;
         const shinyIds = Object.keys(unlocked).filter(id => unlocked[id] === 'shiny');
 
         if (shinyIds.length === 0) {
-            statsDisplay.innerHTML += `<p style="text-align: center; padding: 2rem 0;">You haven't caught any shiny Pokémon yet!</p>`;
+            container.innerHTML += `<p style="text-align: center; padding: 2rem 0;">You haven't caught any shiny Pokémon yet!</p>`;
         } else {
             const grid = document.createElement('div');
             grid.id = 'shiny-grid';
@@ -3334,13 +3445,15 @@ body {
                     <p>${pokemon.name}</p>`;
                 grid.appendChild(item);
             });
-            statsDisplay.appendChild(grid);
+            container.appendChild(grid);
         }
+        return container;
     }
 
     function buildShopView() {
-        const statsDisplay = document.getElementById('stats-display');
-        statsDisplay.innerHTML = `<h3>🛒 Item Shop (Your balance: ¥${pokeyen})</h3>`;
+        const container = document.createElement('div');
+        container.id = 'stats-display';
+        container.innerHTML = `<h3>🛒 Item Shop (Your balance: ¥${pokeyen})</h3>`;
         const grid = document.createElement('div');
         grid.id = 'item-display-grid';
 
@@ -3359,10 +3472,16 @@ body {
                 <div class="price">¥${item.price}</div>
                 <button class="buy-button" ${pokeyen < item.price ? 'disabled' : ''}>Buy</button>
             `;
-            card.querySelector('.buy-button').onclick = () => buyItem(key);
+            card.querySelector('.buy-button').onclick = (e) => {
+                e.stopPropagation(); // Prevent panel from closing
+                buyItem(key);
+                // Rebuild the shop view to reflect changes
+                openInfoPanel(buildShopView);
+            };
             grid.appendChild(card);
         }
-        statsDisplay.appendChild(grid);
+        container.appendChild(grid);
+        return container;
     }
     
     function buyItem(key) {
@@ -3373,18 +3492,18 @@ body {
             bag[key] = (bag[key] || 0) + 1;
             saveGameData();
             updateAllCounters();
-            buildShopView(); // Refresh shop view to update button states
         }
     }
 
     function buildBagView() {
-        const statsDisplay = document.getElementById('stats-display');
-        statsDisplay.innerHTML = `<h3>🎒 Your Bag</h3>`;
+        const container = document.createElement('div');
+        container.id = 'stats-display';
+        container.innerHTML = `<h3>🎒 Your Bag</h3>`;
         
         const itemKeys = Object.keys(bag).filter(key => bag[key] > 0);
 
         if (itemKeys.length === 0) {
-            statsDisplay.innerHTML += `<p style="text-align: center; padding: 2rem 0;">Your bag is empty. Visit the shop!</p>`;
+            container.innerHTML += `<p style="text-align: center; padding: 2rem 0;">Your bag is empty. Visit the shop!</p>`;
         } else {
             const grid = document.createElement('div');
             grid.id = 'item-display-grid';
@@ -3408,8 +3527,9 @@ body {
                 }
                 grid.appendChild(card);
             });
-            statsDisplay.appendChild(grid);
+            container.appendChild(grid);
         }
+        return container;
     }
 
     function useItem(key) {
@@ -3441,6 +3561,9 @@ body {
       document.querySelector('.game-container').classList.remove('info-mode-active');
       document.getElementById('pokedex-device').classList.remove('hidden');
       document.getElementById('pokedex-grid').classList.remove('hidden');
+      document.getElementById('question-answers-area').classList.remove('hidden');
+      document.getElementById('pokedex-info-display').classList.add('hidden');
+
       const pokemonImg = document.getElementById("pokemon-image");
       pokemonImg.src = "sprites/questionmark.png";
       pokemonImg.style.filter = '';
@@ -3452,11 +3575,10 @@ body {
     }
 
     // Event listeners
-    document.getElementById('back-button').addEventListener('click', exitPokedexView);
-    document.getElementById('achievements-button').addEventListener('click', () => showInfoScreen(buildAchievementsView));
-    document.getElementById('shinies-button').addEventListener('click', () => showInfoScreen(buildShiniesView));
-    document.getElementById('shop-button').addEventListener('click', () => showInfoScreen(buildShopView));
-    document.getElementById('bag-button').addEventListener('click', () => showInfoScreen(buildBagView));
+    document.getElementById('achievements-button').addEventListener('click', () => openInfoPanel(buildAchievementsView));
+    document.getElementById('shinies-button').addEventListener('click', () => openInfoPanel(buildShiniesView));
+    document.getElementById('shop-button').addEventListener('click', () => openInfoPanel(buildShopView));
+    document.getElementById('bag-button').addEventListener('click', () => openInfoPanel(buildBagView));
 
     document.getElementById('pokemon-display').addEventListener('click', () => {
       if (gameMode === 'initial') {
