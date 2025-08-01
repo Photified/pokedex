@@ -4412,7 +4412,7 @@ body {
         correctAnswer = validLocations[Math.floor(Math.random() * validLocations.length)];
         
         const allLocations = new Set(pokemonData.flatMap(p => p.locations));
-        const wrongLocationPool = Array.from(allLocations).filter(loc => !pLocationInfo.includes(loc));
+        const wrongLocationPool = Array.from(allLocations).filter(loc => !pLocationInfo.includes(loc) && (loc.includes("Route") || loc.includes("City")));
         pool = wrongLocationPool;
       } else if (stat === "super_effective") {
         questionText = `Which type is ${currentPokemon.name} super effective against?`;
