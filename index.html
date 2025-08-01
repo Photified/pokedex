@@ -853,7 +853,7 @@ body {
 .item-grid-entry h4 { margin: 0 0 0.5rem 0; font-size: 0.9rem; }
 .item-grid-entry p { margin: 0 0 0.4rem 0; font-size: 0.75rem; color: #555; flex-grow: 1; }
 .item-grid-entry .price, .item-grid-entry .item-count { font-weight: bold; color: #333; font-size: 1rem; margin-bottom: 0.5rem; }
-.item-grid-entry .buy-button {
+.item-grid-entry .buy-button, .item-grid-entry .use-button {
     background: linear-gradient(145deg, #4ecdc4, #44a08d);
     color: white;
     border: none;
@@ -865,7 +865,7 @@ body {
     width: 100%;
     margin-top: auto;
 }
-.item-grid-entry .buy-button:disabled { background: #aaa; cursor: not-allowed; }
+.item-grid-entry .buy-button:disabled, .item-grid-entry .use-button:disabled { background: #aaa; cursor: not-allowed; }
 
 /* Style to activate full-screen info mode */
 .game-container.info-mode-active {
@@ -1423,7 +1423,7 @@ body {
 
  
   <script id="pokedex-data" type="application/json">
-[
+  [
   {
     "id": 1,
     "name": "bulbasaur",
@@ -2216,7 +2216,7 @@ body {
     "height": "0.3 m",
     "weight": "5.4 kg",
     "ability": "Effect Spore",
-    "move": ["Scratch","Stun Spore","PoisonPowder","Leech Life","Spore","Slash","Growth", "Swords Dance", "Body Slam", "Take Down", "Double-Edge", "Mega Drain", "Solar Beam", "Dig", "Cut", "Toxic", "Rage", "Mimic", "Double Team", "Reflect", "Bide", "Rest", "Substitute"],
+    "move": ["Scratch","Stun Spore","PoisonPowder","Leech Life","Spore","Slash","Growth", "Swords Dance", "Body Slam", "Take Down", "Double-Edge", "Mega Drain", "Solar Beam", "Dig", "Cut", "Toxic", "Rage", "Mimic", "Double Team", "Reflect", "Bide", "Rest", "Substitute", "Absorb"],
     "egg_group": "Bug, Grass",
     "type": ["Bug","Grass"],
     "super_effective": ["Ground","Poison","Psychic","Rock","Water"],
@@ -2232,7 +2232,7 @@ body {
     "height": "1.0 m",
     "weight": "29.5 kg",
     "ability": "Effect Spore",
-    "move": ["Scratch","Stun Spore","PoisonPowder","Leech Life","Spore","Slash","Growth", "Swords Dance", "Body Slam", "Take Down", "Double-Edge", "Hyper Beam", "Mega Drain", "Solar Beam", "Dig", "Cut", "Toxic", "Rage", "Mimic", "Double Team", "Reflect", "Bide", "Rest", "Substitute"],
+    "move": ["Scratch","Stun Spore","PoisonPowder","Leech Life","Spore","Slash","Growth", "Swords Dance", "Body Slam", "Take Down", "Double-Edge", "Hyper Beam", "Mega Drain", "Solar Beam", "Dig", "Cut", "Toxic", "Rage", "Mimic", "Double Team", "Reflect", "Bide", "Rest", "Substitute", "Absorb"],
     "egg_group": "Bug, Grass",
     "type": ["Bug","Grass"],
     "super_effective": ["Ground","Poison","Psychic","Rock","Water"],
@@ -3951,7 +3951,6 @@ body {
     ]
   }
 ]
-
   </script>
   <script>
     // Game state variables
@@ -3959,7 +3958,7 @@ body {
     const pokemonDataScript = document.getElementById("pokedex-data");
     const jsonData = pokemonDataScript ? pokemonDataScript.textContent.trim() : '';
     try {
-        if (jsonData) {
+        if (jsonData && !jsonData.includes("PASTE YOUR POKEMON JSON DATA HERE")) {
             pokemonData = JSON.parse(jsonData);
         } else {
             // If there's no data, we can't start the game.
@@ -3978,6 +3977,7 @@ body {
     let currentOptions = []; // Stores the current answer options
     let bonusQuestions = [];
     let bonusIndex = 0;
+    let currentBonusCorrectAnswer = ""; // For Poké Flute
     let lastRocket = false;
     let lastMeowth = false; // To prevent back-to-back Meowth encounters
     let currentIsShinyRound = false;
@@ -3991,18 +3991,25 @@ body {
     let pokeyen = 0;
     let bag = {};
     let earnedBadges = {};
+    let activeBuffs = { repel: 0, luckyegg: 0, lure: 0 }; // Added lure
     let gymChallengeState = {
         active: false,
         gym: null,
         pokemonIndex: 0,
-        currentPokemon: null
+        currentPokemon: null,
+        currentQuestion: null // To resume battles
     };
 
+    // --- NEW: Added Lure, updated Poké Flute description ---
     const SHOP_ITEMS = {
-        pokeball: { name: "Poké Ball", price: 200, description: "Use ball during a catch to skip 1 bonus question.", sprite: "sprites/pokeball.png", effect: 1 },
-        greatball: { name: "Great Ball", price: 350, description: "Use ball during a catch to skip 2 bonus questions.", sprite: "sprites/greatball.png", effect: 2 },
-        ultraball: { name: "Ultra Ball", price: 500, description: "Use ball during a catch to skip all bonus questions.", sprite: "sprites/ultraball.png", effect: 3 },
-        evolutionStone: { name: "Evolution Stone", price: 750, description: "An experimental stone from Silph Co. that forces evolution.", sprite: "sprites/evolutionstone.png" }
+        pokeball: { name: "Poké Ball", price: 200, description: "Use during a catch to skip 1 bonus question.", sprite: "sprites/pokeball.png", effect: 1, type: 'catch_assist' },
+        greatball: { name: "Great Ball", price: 350, description: "Use during a catch to skip 2 bonus questions.", sprite: "sprites/greatball.png", effect: 2, type: 'catch_assist' },
+        ultraball: { name: "Ultra Ball", price: 500, description: "Use during a catch to skip all bonus questions.", sprite: "sprites/ultraball.png", effect: 3, type: 'catch_assist' },
+        evolutionStone: { name: "Evolution Stone", price: 750, description: "An experimental stone from Silph Co. that forces evolution.", sprite: "sprites/evolutionstone.png", type: 'evolution' },
+        pokeflute: { name: "Poké Flute", price: 100, description: "Use on a bonus question to get a new question.", sprite: "sprites/pokeflute.png", type: 'guess_assist' },
+        repel: { name: "Repel", price: 100, description: "Prevents Team Rocket & Meowth encounters for 10 rounds.", sprite: "sprites/repel.png", type: 'buff', effect: 10 },
+        luckyegg: { name: "Lucky Egg", price: 250, description: "Doubles Pokéyen earnings for 5 rounds.", sprite: "sprites/luckyegg.png", type: 'buff', effect: 5 },
+        lure: { name: "Lure", price: 300, description: "Greatly increases shiny chance for 10 rounds.", sprite: "sprites/lure.png", type: 'buff', effect: 10 }
     };
     
     const EVOLUTION_MAP = {
@@ -4016,14 +4023,14 @@ body {
     };
 
     const GYM_DATA = {
-        brock: { name: "Brock", badgeName: "Boulder Badge", sprite: "sprites/gym_brock.png", badgeSprite: "sprites/badge_boulder.png", unlock: 10, pokemonIds: [74, 95], bonusType: 'Rock', achievement: 'boulderBadge' },
-        misty: { name: "Misty", badgeName: "Cascade Badge", sprite: "sprites/gym_misty.png", badgeSprite: "sprites/badge_cascade.png", unlock: 20, pokemonIds: [120, 121], bonusType: 'Water', achievement: 'cascadeBadge' },
-        surge: { name: "Lt. Surge", badgeName: "Thunder Badge", sprite: "sprites/gym_surge.png", badgeSprite: "sprites/badge_thunder.png", unlock: 30, pokemonIds: [100, 25, 26], bonusType: 'Electric', achievement: 'thunderBadge' },
-        erika: { name: "Erika", badgeName: "Rainbow Badge", sprite: "sprites/gym_erika.png", badgeSprite: "sprites/badge_rainbow.png", unlock: 40, pokemonIds: [71, 114, 45], bonusType: 'Grass', achievement: 'rainbowBadge' },
-        koga: { name: "Koga", badgeName: "Soul Badge", sprite: "sprites/gym_koga.png", badgeSprite: "sprites/badge_soul.png", unlock: 50, pokemonIds: [109, 89, 110], bonusType: 'Poison', achievement: 'soulBadge' },
-        sabrina: { name: "Sabrina", badgeName: "Marsh Badge", sprite: "sprites/gym_sabrina.png", badgeSprite: "sprites/badge_marsh.png", unlock: 60, pokemonIds: [64, 122, 49, 65], bonusType: 'Psychic', achievement: 'marshBadge' },
-        blaine: { name: "Blaine", badgeName: "Volcano Badge", sprite: "sprites/gym_blaine.png", badgeSprite: "sprites/badge_volcano.png", unlock: 70, pokemonIds: [58, 77, 78, 59], bonusType: 'Fire', achievement: 'volcanoBadge' },
-        giovanni: { name: "Giovanni", badgeName: "Earth Badge", sprite: "sprites/gym_giovanni.png", badgeSprite: "sprites/badge_earth.png", unlock: 80, pokemonIds: [111, 51, 31, 34, 112], bonusType: 'Ground', achievement: 'earthBadge' }
+        brock: { name: "Brock", badgeName: "Boulder Badge", sprite: "sprites/gym_brock.png", badgeSprite: "sprites/badge_boulder.png", unlock: 10, pokemonIds: [74, 95], bonusType: 'Rock', achievement: 'boulderBadge', secondaryBonus: { text: "Slightly reduces Meowth encounters." } },
+        misty: { name: "Misty", badgeName: "Cascade Badge", sprite: "sprites/gym_misty.png", badgeSprite: "sprites/badge_cascade.png", unlock: 20, pokemonIds: [120, 121], bonusType: 'Water', achievement: 'cascadeBadge', secondaryBonus: { text: "Slightly reduces Team Rocket encounters." } },
+        surge: { name: "Lt. Surge", badgeName: "Thunder Badge", sprite: "sprites/gym_surge.png", badgeSprite: "sprites/badge_thunder.png", unlock: 30, pokemonIds: [100, 25, 26], bonusType: 'Electric', achievement: 'thunderBadge', secondaryBonus: { text: "Slightly extends time for Meowth encounters." } },
+        erika: { name: "Erika", badgeName: "Rainbow Badge", sprite: "sprites/gym_erika.png", badgeSprite: "sprites/badge_rainbow.png", unlock: 40, pokemonIds: [71, 114, 45], bonusType: 'Grass', achievement: 'rainbowBadge', secondaryBonus: { text: "Slightly extends time for Rocket encounters." } },
+        koga: { name: "Koga", badgeName: "Soul Badge", sprite: "sprites/gym_koga.png", badgeSprite: "sprites/badge_soul.png", unlock: 50, pokemonIds: [109, 89, 110], bonusType: 'Poison', achievement: 'soulBadge', secondaryBonus: { text: "Increases Pokéyen from correct guesses." } },
+        sabrina: { name: "Sabrina", badgeName: "Marsh Badge", sprite: "sprites/gym_sabrina.png", badgeSprite: "sprites/badge_marsh.png", unlock: 60, pokemonIds: [64, 122, 49, 65], bonusType: 'Psychic', achievement: 'marshBadge', secondaryBonus: { text: "Reduces Team Rocket's steal success rate." } },
+        blaine: { name: "Blaine", badgeName: "Volcano Badge", sprite: "sprites/gym_blaine.png", badgeSprite: "sprites/badge_volcano.png", unlock: 70, pokemonIds: [58, 77, 78, 59], bonusType: 'Fire', achievement: 'volcanoBadge', secondaryBonus: { text: "Reduces Meowth's steal success rate." } },
+        giovanni: { name: "Giovanni", badgeName: "Earth Badge", sprite: "sprites/gym_giovanni.png", badgeSprite: "sprites/badge_earth.png", unlock: 80, pokemonIds: [111, 51, 31, 34, 112], bonusType: 'Ground', achievement: 'earthBadge', secondaryBonus: { text: "Grants a Pokéyen bonus on failed enemy encounters." } }
     };
 
     const ALL_ACHIEVEMENTS = {
@@ -4243,8 +4250,12 @@ body {
         if (!achievement) return;
 
         gameAchievements[key] = (gameAchievements[key] || 0) + 1;
-        pokeyen += achievement.prize;
-        showAchievement(achievement.title, `${achievement.description} (+¥${achievement.prize})`);
+        
+        let prize = achievement.prize;
+        if(activeBuffs.luckyegg > 0) prize *= 2;
+        pokeyen += prize;
+
+        showAchievement(achievement.title, `${achievement.description} (+¥${prize})`);
         updateAllCounters();
         saveGameData();
     }
@@ -4313,6 +4324,7 @@ body {
       pokeyen = parseInt(localStorage.getItem("pokemonPokeyen")) || 0;
       bag = JSON.parse(localStorage.getItem("pokemonBag")) || {};
       earnedBadges = JSON.parse(localStorage.getItem("pokemonBadges")) || {};
+      activeBuffs = JSON.parse(localStorage.getItem("pokemonBuffs")) || { repel: 0, luckyegg: 0, lure: 0 };
       
       updateAllCounters();
     }
@@ -4324,6 +4336,7 @@ body {
       localStorage.setItem("pokemonPokeyen", pokeyen.toString());
       localStorage.setItem("pokemonBag", JSON.stringify(bag));
       localStorage.setItem("pokemonBadges", JSON.stringify(earnedBadges));
+      localStorage.setItem("pokemonBuffs", JSON.stringify(activeBuffs));
     }
 
     function updateAllCounters() {
@@ -4356,17 +4369,31 @@ body {
       document.getElementById('pokemon-display').classList.remove('energy-burst');
       
       if (!isResume) {
+        // Decrement buffs at the start of a new round
+        if (activeBuffs.repel > 0) activeBuffs.repel--;
+        if (activeBuffs.luckyegg > 0) activeBuffs.luckyegg--;
+        if (activeBuffs.lure > 0) activeBuffs.lure--;
+
+        let rocketChance = 0.15;
+        if (earnedBadges.misty) rocketChance -= 0.02;
+
+        let meowthChance = 0.15;
+        if (earnedBadges.brock) meowthChance -= 0.02;
+
         const eventRoll = Math.random();
-        if (!lastRocket && !lastMeowth && eventRoll < 0.15) { // 15% chance for Rocket
-            lastRocket = true;
-            lastMeowth = false;
-            handleTeamRocket();
-            return;
-        } else if (!lastMeowth && !lastRocket && eventRoll < 0.30) { // Another 15% chance for Meowth
-            lastMeowth = true;
-            lastRocket = false;
-            handleMeowthEncounter();
-            return;
+        
+        if (activeBuffs.repel <= 0) {
+            if (!lastRocket && !lastMeowth && eventRoll < rocketChance) { 
+                lastRocket = true;
+                lastMeowth = false;
+                handleTeamRocket();
+                return;
+            } else if (!lastMeowth && !lastRocket && eventRoll < (rocketChance + meowthChance)) {
+                lastMeowth = true;
+                lastRocket = false;
+                handleMeowthEncounter();
+                return;
+            }
         }
         lastRocket = false;
         lastMeowth = false;
@@ -4413,7 +4440,11 @@ body {
         buttonElement.classList.add('correct');
         currentStreak++;
         checkStreakAchievements(currentStreak);
-        pokeyen += 10; 
+        
+        let guessReward = earnedBadges.koga ? 15 : 10;
+        if (activeBuffs.luckyegg > 0) guessReward *= 2;
+        pokeyen += guessReward; 
+
         updateAllCounters();
         document.getElementById("question-text").textContent = "Correct! Catch Phase starting...";
         
@@ -4455,7 +4486,6 @@ body {
         const rocketTextPopup = document.getElementById('rocket-text-popup');
         let clickedRocket = false;
 
-        // Randomize position
         const randomTop = Math.random() * 70 + 15; 
         const randomLeft = Math.random() * 70 + 15;
         rocketPopup.style.top = `${randomTop}vh`;
@@ -4484,6 +4514,9 @@ body {
         rocketPopup.classList.remove('hidden');
         rocketTextPopup.classList.remove('hidden');
 
+        let rocketTime = 1500;
+        if (earnedBadges.erika) rocketTime += 100;
+
         rocketTimer = setTimeout(() => {
             if (clickedRocket) return;
             
@@ -4493,8 +4526,11 @@ body {
 
             let message;
             const normalKeys = Object.keys(unlocked).filter(id => unlocked[id] === "normal");
+            
+            let stealChance = 0.75;
+            if (earnedBadges.sabrina) stealChance -= 0.10;
 
-            if (Object.keys(unlocked).length >= 5 && Math.random() < 0.75 && normalKeys.length > 0) {
+            if (Object.keys(unlocked).length >= 5 && Math.random() < stealChance && normalKeys.length > 0) {
                 const stealId = parseInt(normalKeys[Math.floor(Math.random() * normalKeys.length)], 10);
                 const stolenName = pokemonData.find(p => p.id === stealId)?.name || `Pokémon #${stealId}`;
                 delete unlocked[stealId];
@@ -4505,6 +4541,12 @@ body {
                 createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
             } else {
                 message = "You were too slow, but Team Rocket failed to steal a Pokémon!";
+                if (earnedBadges.giovanni) {
+                    let prize = 250;
+                    if (activeBuffs.luckyegg > 0) prize *= 2;
+                    pokeyen += prize;
+                    message += ` They dropped ¥${prize} in their haste!`;
+                }
             }
             
             document.getElementById("question-text").textContent = message;
@@ -4518,7 +4560,7 @@ body {
                 startRound();
             }, 4000);
 
-        }, 1500); // 1.5-second window
+        }, rocketTime);
     }
 
     function handleMeowthEncounter() {
@@ -4551,7 +4593,10 @@ body {
             meowthTextPopup.classList.add('fade-out');
             
             let message;
-            if (Math.random() < 0.25) { 
+            let lateStealChance = 0.25;
+            if (earnedBadges.blaine) lateStealChance -= 0.10;
+
+            if (Math.random() < lateStealChance) { 
                 const amounts = [10, 20, 30, 40, 50];
                 const stolenAmount = amounts[Math.floor(Math.random() * amounts.length)];
                 if (pokeyen > 0) {
@@ -4583,6 +4628,9 @@ body {
         meowthPopup.classList.remove('hidden');
         meowthTextPopup.classList.remove('hidden');
 
+        let meowthTime = 1000;
+        if (earnedBadges.surge) meowthTime += 100;
+
         meowthTimer = setTimeout(() => {
             if (clickedCoin) return;
             
@@ -4595,10 +4643,21 @@ body {
             const stolenAmount = amounts[Math.floor(Math.random() * amounts.length)];
 
             if (pokeyen > 0) {
-                 const actualStolen = Math.min(pokeyen, stolenAmount);
-                 pokeyen -= actualStolen;
-                 message = `Too slow! Meowth stole ¥${actualStolen}!`;
-                 createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
+                 let stealFailed = earnedBadges.blaine && Math.random() < 0.10;
+                 if (stealFailed) {
+                     message = "Too slow! But Meowth fumbled the coins thanks to your Volcano Badge!";
+                     if (earnedBadges.giovanni) {
+                         let prize = 250;
+                         if (activeBuffs.luckyegg > 0) prize *= 2;
+                         pokeyen += prize;
+                         message += ` It also dropped ¥${prize}!`;
+                     }
+                 } else {
+                     const actualStolen = Math.min(pokeyen, stolenAmount);
+                     pokeyen -= actualStolen;
+                     message = `Too slow! Meowth stole ¥${actualStolen}!`;
+                     createParticles(document.getElementById('game-particles'), 15, '#ff6b6b');
+                 }
             } else {
                  message = "Too slow! Meowth tried to steal, but you have no money!";
             }
@@ -4616,7 +4675,7 @@ body {
                 startRound();
             }, 4000);
 
-        }, 1000); // 1-second window
+        }, meowthTime);
     }
 
     function startBonusRound() {
@@ -4629,14 +4688,15 @@ body {
       const pokemonTypes = currentPokemon.type;
       for (const gymKey in earnedBadges) {
           const gym = GYM_DATA[gymKey];
-          // BUG FIX: Ensure we only check actual badges, not failure flags.
-          if (gym && pokemonTypes.includes(gym.bonusType)) {
+          if (gym && earnedBadges[gymKey] && pokemonTypes.includes(gym.bonusType)) {
               shinyChance += 0.05;
           }
       }
 
       if (currentStreak >= 5) shinyChance += 0.05;
       if (currentStreak >= 10) shinyChance += 0.10;
+      // --- NEW: Apply Lure bonus ---
+      if (activeBuffs.lure > 0) shinyChance += 0.15;
       
       currentIsShinyRound = Math.random() < shinyChance;
       
@@ -4732,7 +4792,8 @@ body {
         const allMoves = new Set(pokemonData.flatMap(p => p.move));
         pool = Array.from(allMoves).filter(move => move !== correctAnswer);
       }
-
+      
+      currentBonusCorrectAnswer = correctAnswer; // Store for Poké Flute
       pool = Array.from(new Set(pool));
       document.getElementById("question-text").textContent = questionText;
 
@@ -4757,7 +4818,9 @@ body {
       if (selected === correctAnswer) {
         sounds.correct();
         buttonElement.classList.add('correct');
-        pokeyen += 10; // Award for correct bonus question
+        let prize = 10;
+        if(activeBuffs.luckyegg > 0) prize *= 2;
+        pokeyen += prize; // Award for correct bonus question
         updateAllCounters();
         
         const pokeballs = document.querySelectorAll('.bonus-pokeball');
@@ -4797,7 +4860,6 @@ body {
       checkAllAchievements(); // Check after saving and updating UI
       updateAllCounters();
 
-      // Check for gym challenge unlock
       const gymToChallenge = checkForGymUnlock();
       if (gymToChallenge) {
           setTimeout(() => startGymChallenge(gymToChallenge), 2500);
@@ -4809,13 +4871,11 @@ body {
       }
     }
 
-    // --- GYM CHALLENGE LOGIC ---
     function checkForGymUnlock() {
         const unlockedCount = Object.keys(unlocked).length;
         for (const gymKey in GYM_DATA) {
             const gym = GYM_DATA[gymKey];
             if (!earnedBadges[gymKey] && unlockedCount >= gym.unlock) {
-                // Check if the player has failed this attempt before
                 if (earnedBadges[`failed_${gymKey}`] !== unlockedCount) {
                     return gymKey;
                 }
@@ -4848,7 +4908,6 @@ body {
         const pokemon = pokemonData.find(p => p.id === pokemonId);
         gymChallengeState.currentPokemon = pokemon;
 
-        // Re-use bonus question logic
         const stats = ["height","weight","ability","id","egg_group","type","super_effective","weak_against","move"];
         let stat = shuffle(stats)[0];
         let questionText = "", correctAnswer = "", pool = [];
@@ -4912,6 +4971,13 @@ body {
         const wrongs = availableWrongs.slice(0, 3);
         
         const options = shuffle([correctAnswer, ...wrongs]);
+        
+        gymChallengeState.currentQuestion = {
+            text: questionText,
+            correctAnswer: correctAnswer,
+            options: options
+        };
+
         const answersGrid = document.getElementById("answers-grid");
         answersGrid.innerHTML = "";
         options.forEach(ans => {
@@ -4948,7 +5014,7 @@ body {
         sounds.unlock();
         createParticles(document.getElementById('game-particles'), 30, '#feca57');
         
-        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null };
+        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null, currentQuestion: null };
         saveGameData();
         updateAllCounters();
         
@@ -4963,7 +5029,7 @@ body {
         document.getElementById("question-text").textContent = `You were defeated by ${gymChallengeState.gym.name}. Train harder and try again!`;
         document.getElementById('answers-grid').innerHTML = '';
         
-        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null };
+        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null, currentQuestion: null };
         saveGameData();
         
         setTimeout(startRound, 3000);
@@ -5008,8 +5074,6 @@ body {
       }
     }
 
-    // --- VIEW SWITCHING LOGIC ---
-
     function openInfoPanel(contentBuilder, builderArg = null) {
         if (isMenuOpen) return;
         isMenuOpen = true;
@@ -5051,30 +5115,36 @@ body {
         document.getElementById('pokedex-device').classList.remove('hidden');
         document.getElementById('pokedex-grid').classList.remove('hidden');
         document.getElementById('question-answers-area').classList.remove('hidden');
-        if (gameMode === 'bonus') {
-            resumeBonusRound();
-        } else if (gameMode === 'main') {
-            resumeMainRound();
+        
+        if (gameMode === 'main') {
+            startRound(true);
+        } else if (gameMode === 'bonus') {
+            askNextBonusQuestion();
         } else if (gameMode === 'gym') {
-            // If we were in a gym challenge, we just go back to the main game.
-            startRound();
+            resumeGymBattle();
         }
       }
     }
     
-    function resumeMainRound() {
-        startRound(true); // Call startRound in resume mode
-    }
-    
-    function resumeBonusRound() {
-        const pokemonImg = document.getElementById("pokemon-image");
-        pokemonImg.src = getSpritePath(currentPokemon.id, currentIsShinyRound);
-        pokemonImg.style.filter = '';
-        pokemonImg.classList.toggle('shiny', currentIsShinyRound);
+    function resumeGymBattle() {
+        gameMode = 'gym';
+        document.getElementById('pokedex-device').classList.add('gym-leader-mode');
         
-        askNextBonusQuestion();
+        const { text, correctAnswer, options } = gymChallengeState.currentQuestion;
+        document.getElementById("question-text").textContent = text;
+        document.getElementById('pokemon-image').src = getSpritePath(gymChallengeState.currentPokemon.id);
+
+        const answersGrid = document.getElementById("answers-grid");
+        answersGrid.innerHTML = "";
+        options.forEach(ans => {
+            const btn = document.createElement("button");
+            btn.className = "answer-button";
+            btn.textContent = ans;
+            btn.onclick = () => handleGymAnswer(ans, correctAnswer, btn);
+            answersGrid.appendChild(btn);
+        });
     }
-    
+
     const TYPE_COLORS = {
         'Normal': '#A8A878', 'Fire': '#F08030', 'Water': '#6890F0', 'Electric': '#F8D030',
         'Grass': '#78C850', 'Ice': '#98D8D8', 'Fighting': '#C03028', 'Poison': '#A040A0',
@@ -5331,15 +5401,9 @@ function buildShiniesView() {
     
     const shinyIds = Object.keys(unlocked).filter(id => unlocked[id] === 'shiny');
 
-    // Header
-    container.innerHTML = `
-        <h3 style="text-align: center; color: #000; margin-bottom: 1rem;">
-            ⭐ Shiny Collection ⭐
-        </h3>
-    `;
+    container.innerHTML = `<h3 style="text-align: center; color: #000; margin-bottom: 1rem;">⭐ Shiny Collection ⭐</h3>`;
 
     if (shinyIds.length > 0) {
-        // Showcase grid
         const showcase = document.createElement('div');
         showcase.className = 'shiny-showcase';
 
@@ -5351,66 +5415,34 @@ function buildShiniesView() {
             card.className = 'shiny-pokemon-card';
             
           card.innerHTML = `
-                <div class="red-area-sparkles">
-                    <div class="red-sparkle"></div>
-                    <div class="red-sparkle"></div>
-                    <div class="red-sparkle"></div>
-                    <div class="red-sparkle"></div>
-                    <div class="red-sparkle"></div>
-                </div>
-                <div class="shiny-sparkles">
-                    <div class="sparkle"></div>
-                    <div class="sparkle"></div>
-                    <div class="sparkle"></div>
-                    <div class="sparkle"></div>
-                    <div class="sparkle"></div>
-                </div>
-                <div class="shiny-sprite-container">
-                    <img src="${getSpritePath(id, true)}" alt="Shiny ${pokemon.name}" class="shiny-sprite">
-                </div>
-                <div class="shiny-info">
-                    <h3 class="shiny-name">${pokemon.name}</h3>
-                </div>
+                <div class="red-area-sparkles"><div class="red-sparkle"></div><div class="red-sparkle"></div><div class="red-sparkle"></div><div class="red-sparkle"></div><div class="red-sparkle"></div></div>
+                <div class="shiny-sparkles"><div class="sparkle"></div><div class="sparkle"></div><div class="sparkle"></div><div class="sparkle"></div><div class="sparkle"></div></div>
+                <div class="shiny-sprite-container"><img src="${getSpritePath(id, true)}" alt="Shiny ${pokemon.name}" class="shiny-sprite"></div>
+                <div class="shiny-info"><h3 class="shiny-name">${pokemon.name}</h3></div>
             `;
-
-            // Add click handler to open detailed view
             card.addEventListener('click', () => {
                 exitPokedexView();
-                setTimeout(() => {
-                    openInfoPanel(buildPokedexScroller, pokemon);
-                }, 100);
+                setTimeout(() => { openInfoPanel(buildPokedexScroller, pokemon); }, 100);
             });
-
             showcase.appendChild(card);
         });
-        
         container.appendChild(showcase);
     } else {
-        // Empty state
         const emptyState = document.createElement('div');
         emptyState.className = 'shiny-empty-state';
         emptyState.innerHTML = `
             <div class="shiny-empty-icon">✨</div>
             <h3 style="color: #888; margin-bottom: 1rem;">No Shiny Pokémon Yet</h3>
-            <p style="color: #666; line-height: 1.5;">
-                Shiny Pokémon are extremely rare variants with special coloring.<br>
-                Keep catching Pokémon to increase your chances of finding one!<br><br>
-                <strong>Tips:</strong><br>
-                • Maintain answer streaks for better shiny rates<br>
-                • Earn gym badges for type-specific bonuses<br>
-                • Look for the special golden glow during catches!
-            </p>
-        `;
+            <p style="color: #666; line-height: 1.5;">Shiny Pokémon are extremely rare variants with special coloring.<br>Keep catching to increase your chances!<br><br><strong>Tips:</strong><br>• Maintain answer streaks for better shiny rates<br>• Earn gym badges for type-specific bonuses</p>`;
         container.appendChild(emptyState);
     }
-    
     return container;
 }
 
     function buildShopView() {
         const container = document.createElement('div');
         container.className = 'info-panel-content-area';
-       container.innerHTML = `<h3>🛒 Item Shop</h3>`;
+       container.innerHTML = `<h3>🛒 Item Shop (Balance: ¥${pokeyen})</h3>`;
         const grid = document.createElement('div');
         grid.id = 'item-display-grid';
 
@@ -5418,9 +5450,7 @@ function buildShiniesView() {
             const item = SHOP_ITEMS[key];
             const card = document.createElement('div');
             card.className = 'item-grid-entry';
-            if (pokeyen >= item.price) {
-              card.classList.add('can-buy');
-            }
+            if (pokeyen >= item.price) card.classList.add('can-buy');
 
             card.innerHTML = `
                 <img src="${item.sprite}" alt="${item.name}">
@@ -5470,18 +5500,30 @@ function buildShiniesView() {
                 const card = document.createElement('div');
                 card.className = 'item-grid-entry';
                 
+                let useButtonHTML = '';
+                let canUse = false;
+                
+                if (item.type === 'catch_assist' && gameMode === 'bonus') canUse = true;
+                if (item.type === 'guess_assist' && gameMode === 'bonus') canUse = true;
+                if (item.type === 'buff') canUse = true;
+
+                if(canUse) {
+                    card.classList.add('can-use');
+                    useButtonHTML = `<button class="use-button">Use</button>`;
+                } else {
+                    card.classList.add('cannot-use');
+                }
+
                 card.innerHTML = `
                     <img src="${item.sprite}" alt="${item.name}">
                     <h4>${item.name}</h4>
                     <p>${item.description}</p>
                     <div class="item-count">x${bag[key]}</div>
+                    ${useButtonHTML}
                 `;
 
-                if (gameMode === 'bonus' && item.effect) {
-                    card.classList.add('can-use');
-                    card.onclick = () => useItem(key);
-                } else {
-                    card.classList.add('cannot-use');
+                if(canUse) {
+                    card.querySelector('.use-button').onclick = () => useItem(key);
                 }
                 grid.appendChild(card);
             });
@@ -5508,7 +5550,8 @@ function buildShiniesView() {
                 <img src="${gym.badgeSprite}" alt="${gym.badgeName}">
                 <h4>${gym.badgeName}</h4>
                 <p>Defeat ${gym.name}</p>
-                <p><strong>Bonus:</strong> +5% Shiny chance for ${gym.bonusType}-type Pokémon.</p>
+                <p><strong>Shiny Bonus:</strong> +5% chance for ${gym.bonusType}-types.</p>
+                <p><strong>Effect:</strong> ${gym.secondaryBonus.text}</p>
             `;
             grid.appendChild(entry);
         }
@@ -5516,32 +5559,37 @@ function buildShiniesView() {
         return container;
     }
 
+    // --- NEW: Reworked useItem function ---
     function useItem(key) {
       if (!bag[key] || bag[key] <= 0) return;
-
       const item = SHOP_ITEMS[key];
-      if (!item.effect) return;
-
-      sounds.correct(); 
-
-      bag[key]--;
       
-      for(let i=0; i<item.effect; i++) {
-          if (bonusIndex < bonusQuestions.length) {
-              const pokeballs = document.querySelectorAll('.bonus-pokeball');
-              if (pokeballs[bonusIndex]) {
-                  pokeballs[bonusIndex].classList.add('unlocked');
+      sounds.correct(); 
+      bag[key]--;
+
+      if(item.type === 'catch_assist') {
+          for(let i=0; i < item.effect; i++) {
+              if (bonusIndex < bonusQuestions.length) {
+                  const pokeballs = document.querySelectorAll('.bonus-pokeball');
+                  if (pokeballs[bonusIndex]) pokeballs[bonusIndex].classList.add('unlocked');
+                  bonusIndex++;
               }
-              bonusIndex++;
           }
+          exitPokedexView();
+          setTimeout(askNextBonusQuestion, 200);
+      } else if (item.type === 'guess_assist' && key === 'pokeflute' && gameMode === 'bonus') {
+          bonusQuestions.splice(bonusIndex, 1); // Remove current question
+          exitPokedexView();
+          setTimeout(askNextBonusQuestion, 200); // Ask the next one
+      } else if (item.type === 'buff') {
+          if (key === 'repel') activeBuffs.repel += item.effect;
+          if (key === 'luckyegg') activeBuffs.luckyegg += item.effect;
+          if (key === 'lure') activeBuffs.lure += item.effect;
+          exitPokedexView();
       }
 
       saveGameData();
       updateAllCounters();
-      
-      exitPokedexView();
-
-      setTimeout(askNextBonusQuestion, 200);
     }
 
     function setupInitialView() {
