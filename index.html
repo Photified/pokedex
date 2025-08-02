@@ -147,6 +147,66 @@ body {
   padding: 0.2rem; 
 }
 
+/* NEW: Battle HUD for Gym Fights */
+#battle-hud {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.hp-container {
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 10px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* REVISED: Player HP is now bottom-left */
+#player-hp-container {
+    align-self: flex-start; 
+}
+
+/* REVISED: Leader HP is now top-right */
+#leader-hp-container {
+    align-self: flex-end;
+}
+
+.hp-label {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.hp-bar {
+    display: flex;
+    gap: 4px;
+}
+
+.hp-heart {
+    font-size: 1.2rem;
+    color: #ff4757;
+    text-shadow: 0 0 5px #ff4757;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.hp-heart.lost {
+    transform: scale(0);
+    opacity: 0;
+}
+
+
 .pokemon-display.energy-burst {
   background: radial-gradient(circle, #ffffff 10%, #ffff00 30%, #ff6600 60%, #ff0000 100%);
   animation: energyPulse 1s ease-in-out; 
@@ -1463,6 +1523,16 @@ body {
       
       <div class="screen-container">
         <div class="pokemon-display" id="pokemon-display">
+          <div id="battle-hud" class="hidden">
+              <div id="leader-hp-container" class="hp-container">
+                  <span class="hp-label">Leader HP:</span>
+                  <div class="hp-bar" id="leader-hp-bar"></div>
+              </div>
+              <div id="player-hp-container" class="hp-container">
+                  <span class="hp-label">Your HP:</span>
+                  <div class="hp-bar" id="player-hp-bar"></div>
+              </div>
+          </div>
           <img id="pokemon-image" class="pokemon-image" src="" alt="Pokemon" />
           <div class="particles" id="game-particles"></div>
         </div>
@@ -1541,7 +1611,7 @@ body {
 
  
   <script id="pokedex-data" type="application/json">
-   [
+    [
   {
     "id": 1,
     "name": "bulbasaur",
@@ -4110,12 +4180,16 @@ body {
     let bag = {};
     let earnedBadges = {};
     let activeBuffs = { repel: 0, luckyegg: 0, lure: 0, maxlure: 0 }; // Added maxlure
+    
+    // MODIFIED: gymChallengeState now includes HP
     let gymChallengeState = {
         active: false,
         gym: null,
         pokemonIndex: 0,
         currentPokemon: null,
-        currentQuestion: null // To resume battles
+        currentQuestion: null,
+        playerHP: 0,
+        leaderHP: 0
     };
 
     // --- UPDATED: Lure items and prices ---
@@ -4507,6 +4581,7 @@ body {
       
       document.getElementById('question-answers-area').classList.remove('hidden');
       document.getElementById('pokedex-info-display').classList.add('hidden');
+      document.getElementById('battle-hud').classList.add('hidden'); // Hide battle HUD
 
       // --- MODIFIED: Explicitly manage buff/pokeball visibility ---
       document.getElementById('bonus-pokeballs-container').classList.add('hidden');
@@ -5039,27 +5114,49 @@ body {
         return null;
     }
 
+    // --- NEW: Function to update HP bar UI ---
+    function updateHpBar(barId, currentHp, maxHp) {
+        const bar = document.getElementById(barId);
+        if (!bar) return;
+        bar.innerHTML = '';
+        for (let i = 0; i < maxHp; i++) {
+            const heart = document.createElement('span');
+            heart.className = 'hp-heart';
+            heart.textContent = '❤️';
+            if (i >= currentHp) {
+                heart.classList.add('lost');
+            }
+            bar.appendChild(heart);
+        }
+    }
+
+    // --- MODIFIED: startGymChallenge now sets up HP ---
     function startGymChallenge(gymKey) {
         gameMode = 'gym';
         gymChallengeState.active = true;
         gymChallengeState.gym = GYM_DATA[gymKey];
         gymChallengeState.pokemonIndex = 0;
+        gymChallengeState.playerHP = 3; // Player starts with 3 HP
+        gymChallengeState.leaderHP = 5; // Leader starts with 5 HP
         
         document.getElementById('pokedex-device').classList.add('gym-leader-mode');
         document.getElementById("question-text").textContent = `You are challenged by Gym Leader ${gymChallengeState.gym.name}!`;
         document.getElementById('answers-grid').innerHTML = '';
         document.getElementById('pokemon-image').src = gymChallengeState.gym.sprite;
+
+        // Setup and show HP bars
+        const battleHud = document.getElementById('battle-hud');
+        battleHud.classList.remove('hidden');
+        updateHpBar('player-hp-bar', gymChallengeState.playerHP, 3);
+        updateHpBar('leader-hp-bar', gymChallengeState.leaderHP, 5);
         
         setTimeout(askNextGymQuestion, 2500);
     }
     
+    // --- MODIFIED: askNextGymQuestion focuses only on asking ---
     function askNextGymQuestion() {
-        if (gymChallengeState.pokemonIndex >= gymChallengeState.gym.pokemonIds.length) {
-            winGymChallenge();
-            return;
-        }
-
-        const pokemonId = gymChallengeState.gym.pokemonIds[gymChallengeState.pokemonIndex];
+        // Use a different pokemon from the leader's team for variety
+        const pokemonId = gymChallengeState.gym.pokemonIds[gymChallengeState.pokemonIndex % gymChallengeState.gym.pokemonIds.length];
         const pokemon = pokemonData.find(p => p.id === pokemonId);
         gymChallengeState.currentPokemon = pokemon;
 
@@ -5096,7 +5193,7 @@ body {
             if (pokemon.super_effective.length > 0) {
                 correctAnswer = pokemon.super_effective[Math.floor(Math.random() * pokemon.super_effective.length)];
                 const allTypes = new Set(pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]));
-                pool = Array.from(allTypes).filter(type => !pokemon.super_effective.includes(type));
+                pool = Array.from(allTypes).filter(type => !currentPokemon.super_effective.includes(type));
             } else {
                 correctAnswer = "None";
                 pool = ["Fire", "Water", "Grass", "Electric"];
@@ -5106,7 +5203,7 @@ body {
             if (pokemon.weak_against.length > 0) {
                 correctAnswer = pokemon.weak_against[Math.floor(Math.random() * pokemon.weak_against.length)];
                 const allTypes = new Set(pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]));
-                pool = Array.from(allTypes).filter(type => !pokemon.weak_against.includes(type));
+                pool = Array.from(allTypes).filter(type => !currentPokemon.weak_against.includes(type));
             } else {
                 correctAnswer = "None";
                 pool = ["Fire", "Water", "Grass", "Electric"];
@@ -5144,19 +5241,39 @@ body {
         });
     }
 
+    // --- NEW: handleGymAnswer contains the core battle logic ---
     function handleGymAnswer(selected, correctAnswer, buttonElement) {
+        // Disable buttons to prevent double-clicking
+        document.querySelectorAll('.answer-button').forEach(btn => btn.disabled = true);
+
         if (selected === correctAnswer) {
             sounds.correct();
             buttonElement.classList.add('correct');
-            gymChallengeState.pokemonIndex++;
-            setTimeout(askNextGymQuestion, 1000);
+            gymChallengeState.leaderHP--;
+            updateHpBar('leader-hp-bar', gymChallengeState.leaderHP, 5);
+
+            if (gymChallengeState.leaderHP <= 0) {
+                setTimeout(winGymChallenge, 1000);
+            } else {
+                gymChallengeState.pokemonIndex++;
+                setTimeout(askNextGymQuestion, 1000);
+            }
         } else {
             sounds.wrong();
             buttonElement.classList.add('wrong');
-            failGymChallenge();
+            gymChallengeState.playerHP--;
+            updateHpBar('player-hp-bar', gymChallengeState.playerHP, 3);
+
+            if (gymChallengeState.playerHP <= 0) {
+                setTimeout(failGymChallenge, 1000);
+            } else {
+                gymChallengeState.pokemonIndex++;
+                setTimeout(askNextGymQuestion, 1000);
+            }
         }
     }
 
+    // --- MODIFIED: winGymChallenge cleans up the HP HUD ---
     function winGymChallenge() {
         const gymKey = Object.keys(GYM_DATA).find(key => GYM_DATA[key].name === gymChallengeState.gym.name);
         earnedBadges[gymKey] = true;
@@ -5177,26 +5294,30 @@ body {
         }, 500);
 
         document.getElementById('answers-grid').innerHTML = '';
+        document.getElementById('battle-hud').classList.add('hidden'); // Hide HUD
         
         sounds.unlock();
         createParticles(document.getElementById('game-particles'), 30, '#feca57');
         
-        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null, currentQuestion: null };
+        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null, currentQuestion: null, playerHP: 0, leaderHP: 0 };
         saveGameData();
         updateAllCounters();
         
         setTimeout(startRound, 4000);
     }
 
+    // --- MODIFIED: failGymChallenge cleans up the HP HUD and shows leader sprite ---
     function failGymChallenge() {
         const gymKey = Object.keys(GYM_DATA).find(key => GYM_DATA[key].name === gymChallengeState.gym.name);
         const unlockedCount = Object.keys(unlocked).length;
         earnedBadges[`failed_${gymKey}`] = unlockedCount; // Mark failure at this catch count
 
         document.getElementById("question-text").textContent = `You were defeated by ${gymChallengeState.gym.name}. Train harder and try again!`;
+        document.getElementById('pokemon-image').src = gymChallengeState.gym.sprite; // Show leader sprite
         document.getElementById('answers-grid').innerHTML = '';
+        document.getElementById('battle-hud').classList.add('hidden'); // Hide HUD
         
-        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null, currentQuestion: null };
+        gymChallengeState = { active: false, gym: null, pokemonIndex: 0, currentPokemon: null, currentQuestion: null, playerHP: 0, leaderHP: 0 };
         saveGameData();
         
         setTimeout(startRound, 3000);
@@ -5296,6 +5417,7 @@ body {
     function resumeGymBattle() {
         gameMode = 'gym';
         document.getElementById('pokedex-device').classList.add('gym-leader-mode');
+        document.getElementById('battle-hud').classList.remove('hidden');
         
         const { text, correctAnswer, options } = gymChallengeState.currentQuestion;
         document.getElementById("question-text").textContent = text;
@@ -5786,6 +5908,7 @@ function buildShiniesView() {
       document.getElementById('pokedex-grid').classList.remove('hidden');
       document.getElementById('question-answers-area').classList.remove('hidden');
       document.getElementById('pokedex-info-display').classList.add('hidden');
+      document.getElementById('battle-hud').classList.add('hidden');
 
       const pokemonImg = document.getElementById("pokemon-image");
       pokemonImg.src = "sprites/questionmark.png";
