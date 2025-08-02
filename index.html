@@ -765,7 +765,7 @@ body {
 }
 
 /* HORIZONTAL SCROLLING GRID STYLES */
-#achievement-grid, #item-display-grid, #shiny-grid, #badge-grid {
+#item-display-grid, #shiny-grid, #badge-grid {
     display: grid;
     grid-auto-flow: column;
     grid-template-rows: repeat(2, auto);
@@ -776,35 +776,6 @@ body {
     justify-content: flex-start;
     align-items: start;
     height: 100%;
-}
-
-.achievement-entry {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: rgba(0,0,0,0.03);
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  width: 170px; /* Set fixed width */
-  
-}
-.achievement-entry .icon {
-  font-size: 1.2rem;
-}
-.achievement-entry .details h4 {
-  margin: 0 0 0.2rem 0;
-  font-size: 0.8rem;
-}
-.achievement-entry .details p {
-  margin: 0;
-  font-size: 0.7rem;
-  color: #555;
-  line-height: 1.3;
-}
-.achievement-entry.locked {
-  opacity: 0.5;
-  filter: grayscale(1);
 }
 
 .shiny-grid-item {
@@ -990,6 +961,20 @@ body {
     font-size: 0.8rem;
     color: #555;
     flex-grow: 1;
+}
+
+/* Badge Earned Animation */
+.badge-earned-animation {
+    animation: scaleDown 0.4s ease-in-out;
+}
+
+@keyframes scaleDown {
+    50% {
+        transform: scale(0.9);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 
@@ -1297,7 +1282,114 @@ body {
     opacity: 0.5;
 }
 
+/* --- Enhanced Achievement Display --- */
+.achievement-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+    max-height: calc(100vh - 200px); /* Adjust based on your header/footer */
+    overflow-y: auto;
+}
 
+.achievement-card {
+    background: linear-gradient(145deg, #4a5568, #2d3748); /* Dark Slate/Gray */
+    border: 3px solid #718096; /* Lighter gray border */
+    border-radius: 20px;
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    box-shadow: 
+        0 8px 32px rgba(113, 128, 150, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    color: #f7fafc; /* White-ish text */
+}
+
+.achievement-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent,
+        rgba(160, 174, 192, 0.1), /* Light gray shimmer */
+        transparent
+    );
+    transform: rotate(45deg);
+    animation: shimmerSweep 3.5s infinite;
+}
+
+.achievement-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+        0 12px 40px rgba(113, 128, 150, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: #a0aec0;
+}
+
+.achievement-card.locked {
+    background: linear-gradient(145deg, #2d3748, #1a202c);
+    border-color: #4a5568;
+    opacity: 0.6;
+    filter: grayscale(50%);
+}
+.achievement-card.locked:hover {
+    transform: none;
+    box-shadow: 
+        0 8px 32px rgba(113, 128, 150, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+
+.achievement-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 15px rgba(160, 174, 192, 0.5);
+    line-height: 1;
+}
+
+.achievement-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0; /* Lighter gray text */
+    margin: 0 0 0.5rem 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.achievement-description {
+    font-size: 0.9rem;
+    color: #a0aec0; /* Medium gray text */
+    line-height: 1.4;
+    margin: 0;
+}
+
+.achievement-prize {
+    margin-top: 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #f7fafc;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    display: inline-block;
+}
+
+.achievement-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #888;
+}
+
+.achievement-empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
 
   </style>
 </head>
@@ -1423,7 +1515,7 @@ body {
 
  
   <script id="pokedex-data" type="application/json">
-  [
+    [
   {
     "id": 1,
     "name": "bulbasaur",
@@ -3991,7 +4083,7 @@ body {
     let pokeyen = 0;
     let bag = {};
     let earnedBadges = {};
-    let activeBuffs = { repel: 0, luckyegg: 0, lure: 0 }; // Added lure
+    let activeBuffs = { repel: 0, luckyegg: 0, lure: 0, maxlure: 0 }; // Added maxlure
     let gymChallengeState = {
         active: false,
         gym: null,
@@ -4000,7 +4092,7 @@ body {
         currentQuestion: null // To resume battles
     };
 
-    // --- NEW: Added Lure, updated Poké Flute description ---
+    // --- UPDATED: Lure items and prices ---
     const SHOP_ITEMS = {
         pokeball: { name: "Poké Ball", price: 300, description: "Use ball during a catch to skip 1 bonus question.", sprite: "sprites/pokeball.png", effect: 1, type: 'catch_assist' },
         greatball: { name: "Great Ball", price: 550, description: "Use ball during a catch to skip 2 bonus questions.", sprite: "sprites/greatball.png", effect: 2, type: 'catch_assist' },
@@ -4009,7 +4101,8 @@ body {
         pokeflute: { name: "Poké Flute", price: 200, description: "Use on a bonus question to get a new question.", sprite: "sprites/pokeflute.png", type: 'guess_assist' },
         repel: { name: "Repel", price: 250, description: "Prevents Team Rocket & Meowth encounters for 10 rounds.", sprite: "sprites/repel.png", type: 'buff', effect: 10 },
         luckyegg: { name: "Lucky Egg", price: 300, description: "Doubles your Pokéyen earnings for 5 full rounds.", sprite: "sprites/luckyegg.png", type: 'buff', effect: 5 },
-        lure: { name: "Lure", price: 500, description: "Greatly increases shiny chance for 10 rounds.", sprite: "sprites/lure.png", type: 'buff', effect: 10 }
+        lure: { name: "Lure", price: 1500, description: "Increases shiny chance for 10 rounds.", sprite: "sprites/lure.png", type: 'buff', effect: 10 },
+        maxlure: { name: "Max Lure", price: 3000, description: "Greatly increases shiny chance for 10 rounds.", sprite: "sprites/maxlure.png", type: 'buff', effect: 10 }
     };
     
     const EVOLUTION_MAP = {
@@ -4324,7 +4417,7 @@ body {
       pokeyen = parseInt(localStorage.getItem("pokemonPokeyen")) || 0;
       bag = JSON.parse(localStorage.getItem("pokemonBag")) || {};
       earnedBadges = JSON.parse(localStorage.getItem("pokemonBadges")) || {};
-      activeBuffs = JSON.parse(localStorage.getItem("pokemonBuffs")) || { repel: 0, luckyegg: 0, lure: 0 };
+      activeBuffs = JSON.parse(localStorage.getItem("pokemonBuffs")) || { repel: 0, luckyegg: 0, lure: 0, maxlure: 0 };
       
       updateAllCounters();
     }
@@ -4373,6 +4466,7 @@ body {
         if (activeBuffs.repel > 0) activeBuffs.repel--;
         if (activeBuffs.luckyegg > 0) activeBuffs.luckyegg--;
         if (activeBuffs.lure > 0) activeBuffs.lure--;
+        if (activeBuffs.maxlure > 0) activeBuffs.maxlure--;
 
         let rocketChance = 0.15;
         if (earnedBadges.misty) rocketChance -= 0.02;
@@ -4695,8 +4789,10 @@ body {
 
       if (currentStreak >= 5) shinyChance += 0.05;
       if (currentStreak >= 10) shinyChance += 0.10;
-      // --- NEW: Apply Lure bonus ---
-      if (activeBuffs.lure > 0) shinyChance += 0.15;
+      
+      // Apply Lure bonuses
+      if (activeBuffs.lure > 0) shinyChance += 0.05; // 5% for regular lure
+      if (activeBuffs.maxlure > 0) shinyChance += 0.10; // 10% for max lure
       
       currentIsShinyRound = Math.random() < shinyChance;
       
@@ -5008,7 +5104,19 @@ body {
         grantAchievement(gymChallengeState.gym.achievement);
         
         document.getElementById("question-text").textContent = `You defeated ${gymChallengeState.gym.name} and earned the ${gymChallengeState.gym.badgeName}!`;
-        document.getElementById('pokemon-image').src = gymChallengeState.gym.badgeSprite;
+        
+        const pokemonImg = document.getElementById('pokemon-image');
+        pokemonImg.src = gymChallengeState.gym.badgeSprite;
+        pokemonImg.classList.add('badge-earned-animation');
+
+        const headerBadge = document.getElementById('badges-button');
+        headerBadge.classList.add('badge-earned-animation');
+
+        setTimeout(() => {
+            pokemonImg.classList.remove('badge-earned-animation');
+            headerBadge.classList.remove('badge-earned-animation');
+        }, 500);
+
         document.getElementById('answers-grid').innerHTML = '';
         
         sounds.unlock();
@@ -5367,34 +5475,52 @@ body {
         }, 100);
     }
 
-
     function buildAchievementsView() {
         const container = document.createElement('div');
-        container.className = 'info-panel-content-area';
-        container.innerHTML = `<h3>🏆 Achievements</h3>`;
-        const grid = document.createElement('div');
-        grid.id = 'achievement-grid';
+        container.className = 'info-panel-content-area'; // Keep this for the scroller
+        container.innerHTML = `<h3 style="text-align: center; color: #000; margin-bottom: 1rem;">🏆 Achievements Hall 🏆</h3>`;
 
-        for (const key in ALL_ACHIEVEMENTS) {
-            const achievement = ALL_ACHIEVEMENTS[key];
-            const isUnlocked = gameAchievements[key] > 0;
-            const entry = document.createElement('div');
-            entry.className = 'achievement-entry';
-            if (!isUnlocked) entry.classList.add('locked');
-            
-            const countText = isUnlocked && achievement.repeatable ? ` (x${gameAchievements[key]})` : '';
+        const achievementKeys = Object.keys(ALL_ACHIEVEMENTS);
 
-            entry.innerHTML = `
-                <div class="icon">${achievement.icon}</div>
-                <div class="details">
-                    <h4>${achievement.title}${countText}</h4>
-                    <p>${achievement.description} (+¥${achievement.prize})</p>
-                </div>`;
-            grid.appendChild(entry);
+        if (achievementKeys.length > 0) {
+            const showcase = document.createElement('div');
+            showcase.className = 'achievement-showcase';
+
+            for (const key in ALL_ACHIEVEMENTS) {
+                const achievement = ALL_ACHIEVEMENTS[key];
+                const isUnlocked = gameAchievements[key] > 0;
+                
+                const card = document.createElement('div');
+                card.className = 'achievement-card';
+                if (!isUnlocked) {
+                    card.classList.add('locked');
+                }
+
+                const countText = isUnlocked && achievement.repeatable ? ` (x${gameAchievements[key]})` : '';
+
+                card.innerHTML = `
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div class="achievement-info">
+                        <h4 class="achievement-title">${achievement.title}${countText}</h4>
+                        <p class="achievement-description">${achievement.description}</p>
+                        <div class="achievement-prize">+¥${achievement.prize}</div>
+                    </div>
+                `;
+                showcase.appendChild(card);
+            }
+            container.appendChild(showcase);
+        } else {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'achievement-empty-state';
+            emptyState.innerHTML = `
+                <div class="achievement-empty-icon">🏅</div>
+                <h3>No Achievements Yet</h3>
+                <p>Keep playing to unlock achievements and earn rewards!</p>`;
+            container.appendChild(emptyState);
         }
-        container.appendChild(grid);
         return container;
     }
+
 function buildShiniesView() {
     const container = document.createElement('div');
     container.className = 'info-panel-content-area';
@@ -5559,7 +5685,7 @@ function buildShiniesView() {
         return container;
     }
 
-    // --- NEW: Reworked useItem function ---
+    // --- UPDATED: useItem function ---
     function useItem(key) {
       if (!bag[key] || bag[key] <= 0) return;
       const item = SHOP_ITEMS[key];
@@ -5585,6 +5711,7 @@ function buildShiniesView() {
           if (key === 'repel') activeBuffs.repel += item.effect;
           if (key === 'luckyegg') activeBuffs.luckyegg += item.effect;
           if (key === 'lure') activeBuffs.lure += item.effect;
+          if (key === 'maxlure') activeBuffs.maxlure += item.effect;
           exitPokedexView();
       }
 
