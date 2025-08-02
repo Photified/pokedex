@@ -591,6 +591,29 @@ body {
   transform: scale(1.1);
 }
 
+/* NEW: Active Buffs Display */
+#center-feature-container {
+    min-height: 30px; /* Same height as pokeballs to prevent layout shift */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+}
+#active-buffs-container {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.buff-icon {
+  width: 25px;
+  height: 25px;
+  transition: all 0.3s ease;
+  cursor: help;
+}
+.buff-icon:hover {
+    transform: scale(1.1);
+}
+
 /* Particle effects */
 .particles {
   position: absolute;
@@ -1447,10 +1470,13 @@ body {
         <div class="screen-details">
           <div class="red-button"></div>
           
-          <div id="bonus-pokeballs-container" class="hidden">
-            <img src="sprites/pokeball.png" class="bonus-pokeball">
-            <img src="sprites/pokeball.png" class="bonus-pokeball">
-            <img src="sprites/pokeball.png" class="bonus-pokeball">
+          <div id="center-feature-container">
+            <div id="bonus-pokeballs-container" class="hidden">
+              <img src="sprites/pokeball.png" class="bonus-pokeball">
+              <img src="sprites/pokeball.png" class="bonus-pokeball">
+              <img src="sprites/pokeball.png" class="bonus-pokeball">
+            </div>
+            <div id="active-buffs-container"></div>
           </div>
 
           <div class="speaker-grille">
@@ -1515,7 +1541,7 @@ body {
 
  
   <script id="pokedex-data" type="application/json">
-    [
+   [
   {
     "id": 1,
     "name": "bulbasaur",
@@ -4447,6 +4473,31 @@ body {
       document.getElementById("badge-counter").textContent = `${badgeCount} / 8`;
     }
 
+    // --- MODIFIED: Simplified buff display logic ---
+    function updateBuffDisplay() {
+        const container = document.getElementById('active-buffs-container');
+        if (!container) return;
+        container.innerHTML = ''; // Always clear first
+
+        const buffs = [
+            { key: 'repel', name: 'Repel' },
+            { key: 'luckyegg', name: 'Lucky Egg' },
+            { key: 'lure', name: 'Lure' },
+            { key: 'maxlure', name: 'Max Lure' }
+        ];
+
+        buffs.forEach(buffInfo => {
+            if (activeBuffs[buffInfo.key] > 0) {
+                const item = SHOP_ITEMS[buffInfo.key];
+                const icon = document.createElement('img');
+                icon.src = item.sprite;
+                icon.className = 'buff-icon';
+                icon.title = `${item.name}: ${activeBuffs[buffInfo.key]} rounds left`;
+                container.appendChild(icon);
+            }
+        });
+    }
+
     function startRound(isResume = false) {
       gameMode = 'main';
       document.querySelector('.game-container').classList.remove('info-mode-active');
@@ -4457,7 +4508,12 @@ body {
       document.getElementById('question-answers-area').classList.remove('hidden');
       document.getElementById('pokedex-info-display').classList.add('hidden');
 
+      // --- MODIFIED: Explicitly manage buff/pokeball visibility ---
       document.getElementById('bonus-pokeballs-container').classList.add('hidden');
+      const hasBuffs = Object.values(activeBuffs).some(val => val > 0);
+      document.getElementById('active-buffs-container').classList.toggle('hidden', !hasBuffs);
+      updateBuffDisplay();
+      
       document.getElementById('pokedex-device').classList.remove('team-rocket-mode');
       document.getElementById('pokemon-display').classList.remove('energy-burst');
       
@@ -4776,9 +4832,12 @@ body {
       gameMode = 'bonus';
       document.getElementById('pokemon-display').classList.add('energy-burst');
       
+      // --- MODIFIED: Explicitly manage buff/pokeball visibility ---
+      document.getElementById('active-buffs-container').classList.add('hidden');
+      document.getElementById('bonus-pokeballs-container').classList.remove('hidden');
+
       let shinyChance = 0.10; // Base chance
       
-      // Apply badge bonuses
       const pokemonTypes = currentPokemon.type;
       for (const gymKey in earnedBadges) {
           const gym = GYM_DATA[gymKey];
@@ -4790,9 +4849,11 @@ body {
       if (currentStreak >= 5) shinyChance += 0.05;
       if (currentStreak >= 10) shinyChance += 0.10;
       
-      // Apply Lure bonuses
-      if (activeBuffs.lure > 0) shinyChance += 0.05; // 5% for regular lure
-      if (activeBuffs.maxlure > 0) shinyChance += 0.10; // 10% for max lure
+      if (activeBuffs.maxlure > 0) {
+        shinyChance += 0.10; 
+      } else if (activeBuffs.lure > 0) {
+        shinyChance += 0.05; 
+      }
       
       currentIsShinyRound = Math.random() < shinyChance;
       
@@ -4805,8 +4866,6 @@ body {
       bonusQuestions = shuffle(stats).slice(0,3);
       bonusIndex = 0;
 
-      const pokeballContainer = document.getElementById('bonus-pokeballs-container');
-      pokeballContainer.classList.remove('hidden');
       document.querySelectorAll('.bonus-pokeball').forEach(ball => {
         ball.classList.remove('unlocked');
       });
@@ -5685,7 +5744,7 @@ function buildShiniesView() {
         return container;
     }
 
-    // --- UPDATED: useItem function ---
+    // --- MODIFIED: useItem function ---
     function useItem(key) {
       if (!bag[key] || bag[key] <= 0) return;
       const item = SHOP_ITEMS[key];
@@ -5712,6 +5771,7 @@ function buildShiniesView() {
           if (key === 'luckyegg') activeBuffs.luckyegg += item.effect;
           if (key === 'lure') activeBuffs.lure += item.effect;
           if (key === 'maxlure') activeBuffs.maxlure += item.effect;
+          updateBuffDisplay();
           exitPokedexView();
       }
 
@@ -5735,6 +5795,12 @@ function buildShiniesView() {
 
       document.getElementById("question-text").textContent = "Click the ? to begin your adventure!";
       document.getElementById("answers-grid").innerHTML = "";
+      
+      // --- MODIFIED: Explicitly manage buff/pokeball visibility on init ---
+      document.getElementById('bonus-pokeballs-container').classList.add('hidden');
+      const hasBuffs = Object.values(activeBuffs).some(val => val > 0);
+      document.getElementById('active-buffs-container').classList.toggle('hidden', !hasBuffs);
+      updateBuffDisplay();
     }
 
     // Event listeners
