@@ -521,13 +521,21 @@ body {
     filter: drop-shadow(0 0 10px gold);
 }
 
-/* --- NEW: Experience Bar Styles --- */
+/* --- UPDATED: Experience Bar Styles --- */
 .exp-bar-container {
     width: 100%;
     margin-top: 1rem;
-    padding: 0.5rem;
     background: rgba(0,0,0,0.1);
     border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.exp-bar-container:hover {
+    background: rgba(0,0,0,0.15);
+}
+.exp-bar-header {
+    padding: 0.5rem;
 }
 .exp-bar-label {
     font-size: 0.8rem;
@@ -558,6 +566,20 @@ body {
     background: linear-gradient(90deg, #ffd700, #feca57);
     animation: shinyGlowBg 2s infinite;
 }
+.exp-bar-info {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    font-size: 0.75rem;
+    color: #555;
+    padding: 0 0.5rem;
+}
+.exp-bar-info.show {
+    max-height: 100px;
+    padding: 0 0.5rem 0.5rem;
+    transition: max-height 0.4s ease-in;
+}
+
 @keyframes shinyGlowBg {
   0%, 100% { box-shadow: inset 0 0 10px rgba(255,255,255,0.7); }
   50% { box-shadow: inset 0 0 20px rgba(255,255,255,1); }
@@ -5765,12 +5787,19 @@ body {
 
                 const expBarHTML = `
                     <div class="exp-bar-container">
-                        <div class="exp-bar-label">
-                            <span>Pokémon XP - Adds pokemon back into silhoutte pool. Guarantees shiny on next encounter!</span>
-                            <span>${currentXP}/${MAX_EXPERIENCE}</span>
+                        <div class="exp-bar-header">
+                            <div class="exp-bar-label">
+                                <span>Pokémon XP</span>
+                                <span>${currentXP}/${MAX_EXPERIENCE}</span>
+                            </div>
+                            <div class="exp-bar-background">
+                                <div class="exp-bar-fill ${isMaxed ? 'maxed' : ''}" style="width: ${expPercentage}%;"></div>
+                            </div>
                         </div>
-                        <div class="exp-bar-background">
-                            <div class="exp-bar-fill ${isMaxed ? 'maxed' : ''}" style="width: ${expPercentage}%;"></div>
+                        <div class="exp-bar-info">
+                            <p style="margin:0; line-height: 1.4;">
+                                When maxed out, this Pokémon is added back into the silhouette pool. The next encounter with this Pokémon is <strong>guaranteed to be shiny!</strong>
+                            </p>
                         </div>
                     </div>
                 `;
@@ -5844,6 +5873,15 @@ body {
                     const content = header.nextElementSibling;
                     header.classList.toggle('active');
                     content.classList.toggle('show');
+                });
+            });
+            // NEW: Add listeners for XP bar dropdown
+            scroller.querySelectorAll('.exp-bar-container').forEach(container => {
+                container.addEventListener('click', () => {
+                    const info = container.querySelector('.exp-bar-info');
+                    if (info) {
+                        info.classList.toggle('show');
+                    }
                 });
             });
         }, 0);
@@ -6352,4 +6390,4 @@ function buildShiniesView() {
     initGame();
   </script>
 </body>
-</html>
+</ht
