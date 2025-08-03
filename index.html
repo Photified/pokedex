@@ -1011,6 +1011,55 @@ body {
     border: 3px solid #feca57;
 }
 
+/* --- NEW: Elite Four Challenge Styles --- */
+.e4-mode .pokemon-display {
+    background: linear-gradient(145deg, #4a0e4e, #2d1b69); /* Dark purple/indigo */
+}
+.e4-mode .question-text {
+    background: #fff;
+    color: #333;
+    border: 3px solid #ffd700; /* Gold border */
+}
+
+/* --- NEW: E4 Challenge Button in Badges View --- */
+.e4-challenge-box {
+    grid-column: 1 / -1; /* Span full width */
+    background: linear-gradient(145deg, #2d3748, #1a202c);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    border: 3px solid #ffd700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+.e4-challenge-box:hover:not(.disabled) {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+}
+.e4-challenge-box h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    color: #ffd700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+.e4-challenge-box p {
+    margin: 0;
+    color: #a0aec0;
+}
+.e4-challenge-box.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    border-color: #718096;
+}
+.e4-challenge-box.champion h3 {
+    color: #4ecdc4;
+}
+.e4-challenge-box.champion {
+    border-color: #4ecdc4;
+}
+
 /* Badge Display Styles */
 .badge-entry {
     background: white;
@@ -1542,9 +1591,7 @@ body {
           
           <div id="center-feature-container">
             <div id="bonus-pokeballs-container" class="hidden">
-              <img src="sprites/pokeball.png" class="bonus-pokeball">
-              <img src="sprites/pokeball.png" class="bonus-pokeball">
-              <img src="sprites/pokeball.png" class="bonus-pokeball">
+              <!-- Dynamically populated -->
             </div>
             <div id="active-buffs-container"></div>
           </div>
@@ -1611,7 +1658,7 @@ body {
 
  
   <script id="pokedex-data" type="application/json">
-  [
+[
   {
     "id": 1,
     "name": "Bulbasaur",
@@ -4139,7 +4186,6 @@ body {
     let currentOptions = []; // Stores the current answer options
     let bonusQuestions = [];
     let bonusIndex = 0;
-    let currentBonusCorrectAnswer = ""; // For Poké Flute
     let lastRocket = false;
     let lastMeowth = false; // To prevent back-to-back Meowth encounters
     let currentIsShinyRound = false;
@@ -4153,9 +4199,8 @@ body {
     let pokeyen = 0;
     let bag = {};
     let earnedBadges = {};
-    let activeBuffs = { repel: 0, luckyegg: 0, lure: 0, maxlure: 0 }; // Added maxlure
+    let activeBuffs = { repel: 0, luckyegg: 0, lure: 0, maxlure: 0 };
     
-    // MODIFIED: gymChallengeState now includes HP
     let gymChallengeState = {
         active: false,
         gym: null,
@@ -4166,13 +4211,21 @@ body {
         leaderHP: 0
     };
 
-    // --- UPDATED: Lure items and prices ---
+    let e4ChallengeState = {
+        active: false,
+        challengerIndex: 0,
+        pokemonIndex: 0,
+        challengeRoster: []
+    };
+
+    // --- UPDATED: Item data and prices ---
     const SHOP_ITEMS = {
         pokeball: { name: "Poké Ball", price: 300, description: "Use ball during a catch to skip 1 bonus question.", sprite: "sprites/pokeball.png", effect: 1, type: 'catch_assist' },
         greatball: { name: "Great Ball", price: 550, description: "Use ball during a catch to skip 2 bonus questions.", sprite: "sprites/greatball.png", effect: 2, type: 'catch_assist' },
         ultraball: { name: "Ultra Ball", price: 700, description: "Use ball during a catch to skip all bonus questions.", sprite: "sprites/ultraball.png", effect: 3, type: 'catch_assist' },
         evolutionStone: { name: "Evolution Stone", price: 1000, description: "An experimental stone from Silph Co. that forces evolution.", sprite: "sprites/evolutionstone.png", type: 'evolution' },
-        pokeflute: { name: "Poké Flute", price: 200, description: "Use on a bonus question to get a new question.", sprite: "sprites/pokeflute.png", type: 'guess_assist' },
+        escaperope: { name: "Escape Rope", price: 150, description: "Use on a bonus question to get a new question.", sprite: "sprites/escaperope.png", type: 'reroll_question' },
+        pokeflute: { name: "Poké Flute", price: 100, description: "Use during the silhouette phase to reveal the Pokémon.", sprite: "sprites/pokeflute.png", type: 'autoguess' },
         repel: { name: "Repel", price: 250, description: "Prevents Team Rocket & Meowth encounters for 10 rounds.", sprite: "sprites/repel.png", type: 'buff', effect: 10 },
         luckyegg: { name: "Lucky Egg", price: 300, description: "Doubles your Pokéyen earnings for 5 full rounds.", sprite: "sprites/luckyegg.png", type: 'buff', effect: 5 },
         lure: { name: "Lure", price: 1500, description: "Moderately increases shiny chance for 10 rounds.", sprite: "sprites/lure.png", type: 'buff', effect: 10 },
@@ -4199,6 +4252,14 @@ body {
         blaine: { name: "Blaine", badgeName: "Volcano Badge", sprite: "sprites/gym_blaine.png", badgeSprite: "sprites/badge_volcano.png", unlock: 70, pokemonIds: [58, 77, 78, 59], bonusType: 'Fire', achievement: 'volcanoBadge', secondaryBonus: { text: "Reduces Meowth's steal success rate." } },
         giovanni: { name: "Giovanni", badgeName: "Earth Badge", sprite: "sprites/gym_giovanni.png", badgeSprite: "sprites/badge_earth.png", unlock: 80, pokemonIds: [111, 51, 31, 34, 112], bonusType: 'Ground', achievement: 'earthBadge', secondaryBonus: { text: "Grants a Pokéyen bonus on failed enemy encounters." } }
     };
+
+    const ELITE_FOUR_DATA = [
+        { name: "Lorelei", sprite: "sprites/e4_lorelei.png", pokemonIds: [87, 91, 80, 124, 131] },
+        { name: "Bruno", sprite: "sprites/e4_bruno.png", pokemonIds: [95, 107, 106, 95, 68] },
+        { name: "Agatha", sprite: "sprites/e4_agatha.png", pokemonIds: [94, 42, 93, 24, 94] },
+        { name: "Lance", sprite: "sprites/e4_lance.png", pokemonIds: [130, 148, 148, 142, 149] },
+        { name: "Champion Gary", sprite: "sprites/champ_gary.png", pokemonIds: [18, 65, 112, 6, 9, 3] }
+    ];
 
     const ALL_ACHIEVEMENTS = {
         firstCatch:       { title: "First Steps", description: "Caught your first Pokémon!", icon: "👟", prize: 100 },
@@ -4229,6 +4290,7 @@ body {
         marshBadge:       { title: "Marsh Badge", description: "Defeated Gym Leader Sabrina!", icon: "🛡️", prize: 1000 },
         volcanoBadge:     { title: "Volcano Badge", description: "Defeated Gym Leader Blaine!", icon: "🛡️", prize: 1000 },
         earthBadge:       { title: "Earth Badge", description: "Defeated Gym Leader Giovanni!", icon: "🛡️", prize: 1000 },
+        leagueChampion:   { title: "League Champion", description: "You have defeated the Elite Four and become the Champion!", icon: "👑", prize: 10000 }
     };
 
     document.getElementById('sound-toggle').addEventListener('click', () => {
@@ -4516,12 +4578,11 @@ body {
       const totalAchievements = Object.values(gameAchievements).reduce((sum, count) => sum + count, 0);
       document.getElementById("achievement-counter").textContent = `${totalAchievements}`;
       
-      // Filter out failure flags before counting badges
-      const badgeCount = Object.keys(earnedBadges).filter(key => !key.startsWith('failed_')).length;
+      // Filter out failure flags and champion status before counting badges
+      const badgeCount = Object.keys(earnedBadges).filter(key => !key.startsWith('failed_') && key !== 'champion').length;
       document.getElementById("badge-counter").textContent = `${badgeCount} / 8`;
     }
 
-    // --- MODIFIED: Simplified buff display logic ---
     function updateBuffDisplay() {
         const container = document.getElementById('active-buffs-container');
         if (!container) return;
@@ -4549,7 +4610,7 @@ body {
     function startRound(isResume = false) {
       gameMode = 'main';
       document.querySelector('.game-container').classList.remove('info-mode-active');
-      document.getElementById('pokedex-device').classList.remove('hidden', 'gym-leader-mode');
+      document.getElementById('pokedex-device').classList.remove('hidden', 'gym-leader-mode', 'e4-mode');
       document.getElementById('pokedex-grid').classList.remove('hidden');
       document.getElementById('pokemon-display').style.cursor = 'default';
       
@@ -4557,7 +4618,6 @@ body {
       document.getElementById('pokedex-info-display').classList.add('hidden');
       document.getElementById('battle-hud').classList.add('hidden'); // Hide battle HUD
 
-      // --- MODIFIED: Explicitly manage buff/pokeball visibility ---
       document.getElementById('bonus-pokeballs-container').classList.add('hidden');
       const hasBuffs = Object.values(activeBuffs).some(val => val > 0);
       document.getElementById('active-buffs-container').classList.toggle('hidden', !hasBuffs);
@@ -4881,10 +4941,6 @@ body {
       gameMode = 'bonus';
       document.getElementById('pokemon-display').classList.add('energy-burst');
       
-      // --- MODIFIED: Explicitly manage buff/pokeball visibility ---
-      document.getElementById('active-buffs-container').classList.add('hidden');
-      document.getElementById('bonus-pokeballs-container').classList.remove('hidden');
-
       let shinyChance = 0.10; // Base chance
       
       const pokemonTypes = currentPokemon.type;
@@ -4911,13 +4967,35 @@ body {
       pokemonImg.style.filter = '';
       if (currentIsShinyRound) pokemonImg.classList.add('shiny');
       
+      // --- DYNAMIC CATCH DIFFICULTY (MODIFIED) ---
+      let numBonusQuestions;
+      const isLegendary = [144, 145, 146, 150, 151].includes(currentPokemon.id);
+      const isEvolved = Object.values(EVOLUTION_MAP).flat().includes(currentPokemon.id);
+
+      if (isLegendary) {
+          numBonusQuestions = 4;
+      } else if (isEvolved) {
+          numBonusQuestions = 3;
+      } else {
+          numBonusQuestions = 2; // Base form
+      }
+
       const stats = ["height","weight","ability","id","egg_group","type","super_effective","weak_against","move", "location"];
-      bonusQuestions = shuffle(stats).slice(0,3);
+      bonusQuestions = shuffle(stats).slice(0, numBonusQuestions);
       bonusIndex = 0;
 
-      document.querySelectorAll('.bonus-pokeball').forEach(ball => {
-        ball.classList.remove('unlocked');
-      });
+      // --- DYNAMIC POKEBALLS ---
+      const pokeballsContainer = document.getElementById('bonus-pokeballs-container');
+      pokeballsContainer.innerHTML = ''; // Clear existing
+      for (let i = 0; i < numBonusQuestions; i++) {
+          const ball = document.createElement('img');
+          ball.src = 'sprites/pokeball.png';
+          ball.className = 'bonus-pokeball';
+          pokeballsContainer.appendChild(ball);
+      }
+
+      document.getElementById('active-buffs-container').classList.add('hidden');
+      pokeballsContainer.classList.remove('hidden');
       
       setTimeout(askNextBonusQuestion, 1000);
     }
@@ -4936,6 +5014,7 @@ body {
       if (stat === "location" && !isCatchable) {
           const fallbackTypes = ["height", "weight", "ability", "egg_group", "id"];
           stat = fallbackTypes[Math.floor(Math.random() * fallbackTypes.length)];
+          bonusQuestions[bonusIndex] = stat; // Update the question array
       }
 
       if (stat === "height") {
@@ -4997,7 +5076,6 @@ body {
         pool = Array.from(allMoves).filter(move => move !== correctAnswer);
       }
       
-      currentBonusCorrectAnswer = correctAnswer; // Store for Poké Flute
       pool = Array.from(new Set(pool));
       document.getElementById("question-text").textContent = questionText;
 
@@ -5088,7 +5166,6 @@ body {
         return null;
     }
 
-    // --- NEW: Function to update HP bar UI ---
     function updateHpBar(barId, currentHp, maxHp) {
         const bar = document.getElementById(barId);
         if (!bar) return;
@@ -5104,7 +5181,6 @@ body {
         }
     }
 
-    // --- MODIFIED: startGymChallenge now sets up HP ---
     function startGymChallenge(gymKey) {
         gameMode = 'gym';
         gymChallengeState.active = true;
@@ -5127,7 +5203,6 @@ body {
         setTimeout(askNextGymQuestion, 2500);
     }
     
-    // --- MODIFIED: askNextGymQuestion focuses only on asking ---
     function askNextGymQuestion() {
         // Use a different pokemon from the leader's team for variety
         const pokemonId = gymChallengeState.gym.pokemonIds[gymChallengeState.pokemonIndex % gymChallengeState.gym.pokemonIds.length];
@@ -5167,7 +5242,7 @@ body {
             if (pokemon.super_effective.length > 0) {
                 correctAnswer = pokemon.super_effective[Math.floor(Math.random() * pokemon.super_effective.length)];
                 const allTypes = new Set(pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]));
-                pool = Array.from(allTypes).filter(type => !currentPokemon.super_effective.includes(type));
+                pool = Array.from(allTypes).filter(type => !pokemon.super_effective.includes(type));
             } else {
                 correctAnswer = "None";
                 pool = ["Fire", "Water", "Grass", "Electric"];
@@ -5177,7 +5252,7 @@ body {
             if (pokemon.weak_against.length > 0) {
                 correctAnswer = pokemon.weak_against[Math.floor(Math.random() * pokemon.weak_against.length)];
                 const allTypes = new Set(pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]));
-                pool = Array.from(allTypes).filter(type => !currentPokemon.weak_against.includes(type));
+                pool = Array.from(allTypes).filter(type => !pokemon.weak_against.includes(type));
             } else {
                 correctAnswer = "None";
                 pool = ["Fire", "Water", "Grass", "Electric"];
@@ -5215,7 +5290,6 @@ body {
         });
     }
 
-    // --- NEW: handleGymAnswer contains the core battle logic ---
     function handleGymAnswer(selected, correctAnswer, buttonElement) {
         // Disable buttons to prevent double-clicking
         document.querySelectorAll('.answer-button').forEach(btn => btn.disabled = true);
@@ -5247,7 +5321,6 @@ body {
         }
     }
 
-    // --- MODIFIED: winGymChallenge cleans up the HP HUD ---
     function winGymChallenge() {
         const gymKey = Object.keys(GYM_DATA).find(key => GYM_DATA[key].name === gymChallengeState.gym.name);
         earnedBadges[gymKey] = true;
@@ -5280,7 +5353,6 @@ body {
         setTimeout(startRound, 4000);
     }
 
-    // --- MODIFIED: failGymChallenge cleans up the HP HUD and shows leader sprite ---
     function failGymChallenge() {
         const gymKey = Object.keys(GYM_DATA).find(key => GYM_DATA[key].name === gymChallengeState.gym.name);
         const unlockedCount = Object.keys(unlocked).length;
@@ -5297,6 +5369,170 @@ body {
         setTimeout(startRound, 3000);
     }
 
+    // --- NEW: Elite Four Challenge Functions ---
+    function startE4Challenge() {
+        gameMode = 'e4';
+        e4ChallengeState = {
+            active: true,
+            pokemonIndex: 0,
+            challengeRoster: ELITE_FOUR_DATA.flatMap(c => c.pokemonIds.map(id => ({ challenger: c, pokemonId: id })))
+        };
+        
+        document.getElementById('pokedex-device').classList.add('e4-mode');
+        const challenger = ELITE_FOUR_DATA[0];
+        document.getElementById("question-text").textContent = `Your first challenger is Lorelei of the Elite Four!`;
+        document.getElementById('answers-grid').innerHTML = '';
+        document.getElementById('pokemon-image').src = challenger.sprite;
+        document.getElementById('battle-hud').classList.add('hidden');
+
+        setTimeout(askNextE4Question, 3000);
+    }
+
+    function askNextE4Question() {
+        if (!e4ChallengeState.active || e4ChallengeState.pokemonIndex >= e4ChallengeState.challengeRoster.length) {
+            winE4Challenge();
+            return;
+        }
+
+        const currentChallenge = e4ChallengeState.challengeRoster[e4ChallengeState.pokemonIndex];
+        const pokemon = pokemonData.find(p => p.id === currentChallenge.pokemonId);
+        
+        const stats = ["height","weight","ability","id","egg_group","type","super_effective","weak_against","move"];
+        let stat = shuffle(stats)[0];
+        let questionText = "", correctAnswer = "", pool = [];
+
+        if (stat === "height") {
+            questionText = `What is ${pokemon.name}'s height?`;
+            correctAnswer = pokemon.height;
+            pool = pokemonData.map(p => p.height);
+        } else if (stat === "weight") {
+            questionText = `What is ${pokemon.name}'s weight?`;
+            correctAnswer = pokemon.weight;
+            pool = pokemonData.map(p => p.weight);
+        } else if (stat === "ability") {
+            questionText = `What is ${pokemon.name}'s ability?`;
+            correctAnswer = pokemon.ability;
+            pool = pokemonData.map(p => p.ability);
+        } else if (stat === "id") {
+            questionText = `What is ${pokemon.name}'s Pokédex number?`;
+            correctAnswer = String(pokemon.id);
+            pool = pokemonData.map(p => String(p.id));
+        } else if (stat === "egg_group") {
+            questionText = `What is ${pokemon.name}'s egg group?`;
+            correctAnswer = pokemon.egg_group;
+            pool = pokemonData.map(p => p.egg_group);
+        } else if (stat === "type") {
+            questionText = `What is ${pokemon.name}'s type?`;
+            correctAnswer = pokemon.type.join(", ");
+            pool = pokemonData.map(p => p.type.join(", "));
+        } else if (stat === "super_effective") {
+            questionText = `Which type is ${pokemon.name} super effective against?`;
+            if (pokemon.super_effective.length > 0) {
+                correctAnswer = pokemon.super_effective[Math.floor(Math.random() * pokemon.super_effective.length)];
+                pool = pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]);
+            } else {
+                correctAnswer = "None";
+                pool = ["Fire", "Water", "Grass", "Electric"];
+            }
+        } else if (stat === "weak_against") {
+            questionText = `Which type is ${pokemon.name} weak against?`;
+            if (pokemon.weak_against.length > 0) {
+                correctAnswer = pokemon.weak_against[Math.floor(Math.random() * pokemon.weak_against.length)];
+                pool = pokemonData.flatMap(p => [...p.super_effective, ...p.weak_against, ...p.type]);
+            } else {
+                correctAnswer = "None";
+                pool = ["Fire", "Water", "Grass", "Electric"];
+            }
+        } else if (stat === "move") {
+            questionText = `Which move can ${pokemon.name} learn?`;
+            correctAnswer = pokemon.move[Math.floor(Math.random() * pokemon.move.length)];
+            const allMoves = new Set(pokemonData.flatMap(p => p.move));
+            pool = Array.from(allMoves).filter(move => move !== correctAnswer);
+        }
+
+        pool = Array.from(new Set(pool.filter(item => item !== correctAnswer)));
+        document.getElementById("question-text").textContent = `(${e4ChallengeState.pokemonIndex + 1}/${e4ChallengeState.challengeRoster.length}) ${questionText}`;
+        document.getElementById('pokemon-image').src = getSpritePath(pokemon.id);
+
+        const wrongs = shuffle(pool).slice(0, 3);
+        const options = shuffle([correctAnswer, ...wrongs]);
+
+        const answersGrid = document.getElementById("answers-grid");
+        answersGrid.innerHTML = "";
+        options.forEach(ans => {
+            const btn = document.createElement("button");
+            btn.className = "answer-button";
+            btn.textContent = ans;
+            btn.onclick = () => handleE4Answer(ans, correctAnswer, btn);
+            answersGrid.appendChild(btn);
+        });
+    }
+
+    function handleE4Answer(selected, correctAnswer, buttonElement) {
+        document.querySelectorAll('.answer-button').forEach(btn => btn.disabled = true);
+
+        if (selected === correctAnswer) {
+            sounds.correct();
+            buttonElement.classList.add('correct');
+            e4ChallengeState.pokemonIndex++;
+
+            if (e4ChallengeState.pokemonIndex >= e4ChallengeState.challengeRoster.length) {
+                setTimeout(winE4Challenge, 1000);
+            } else {
+                const lastChallengerName = e4ChallengeState.challengeRoster[e4ChallengeState.pokemonIndex - 1].challenger.name;
+                const nextChallenger = e4ChallengeState.challengeRoster[e4ChallengeState.pokemonIndex].challenger;
+                if (lastChallengerName !== nextChallenger.name) {
+                    document.getElementById("question-text").textContent = `You defeated ${lastChallengerName}! Next up: ${nextChallenger.name}!`;
+                    document.getElementById('answers-grid').innerHTML = '';
+                    document.getElementById('pokemon-image').src = nextChallenger.sprite;
+                    setTimeout(askNextE4Question, 3000);
+                } else {
+                    setTimeout(askNextE4Question, 1000);
+                }
+            }
+        } else {
+            sounds.wrong();
+            buttonElement.classList.add('wrong');
+            setTimeout(failE4Challenge, 1000);
+        }
+    }
+
+    function winE4Challenge() {
+        earnedBadges.champion = true;
+        grantAchievement('leagueChampion');
+        
+        document.getElementById("question-text").textContent = `Unbelievable! You've defeated the Champion and become the new Pokémon League Champion!`;
+        document.getElementById('pokemon-image').src = ELITE_FOUR_DATA[4].sprite;
+        document.getElementById('answers-grid').innerHTML = '';
+        document.getElementById('pokedex-device').classList.remove('e4-mode');
+
+        sounds.unlock();
+        createParticles(document.getElementById('game-particles'), 50, '#ffd700');
+        
+        e4ChallengeState = { active: false, pokemonIndex: 0, challengeRoster: [] };
+        saveGameData();
+        updateAllCounters();
+        
+        setTimeout(startRound, 5000);
+    }
+
+    function failE4Challenge() {
+        document.getElementById("question-text").textContent = `You made a mistake and have been defeated. The Pokémon League challenge is over.`;
+        document.getElementById('answers-grid').innerHTML = '';
+        document.getElementById('pokedex-device').classList.remove('e4-mode');
+        
+        e4ChallengeState = { active: false, pokemonIndex: 0, challengeRoster: [] };
+        saveGameData();
+        
+        setTimeout(startRound, 3000);
+    }
+
+    function resumeE4Challenge() {
+        gameMode = 'e4';
+        document.getElementById('pokedex-device').classList.add('e4-mode');
+        document.getElementById('battle-hud').classList.add('hidden');
+        askNextE4Question();
+    }
 
     function updatePokedexUI() {
       const grid = document.getElementById("pokedex-grid");
@@ -5384,6 +5620,8 @@ body {
             askNextBonusQuestion();
         } else if (gameMode === 'gym') {
             resumeGymBattle();
+        } else if (gameMode === 'e4') {
+            resumeE4Challenge();
         }
       }
     }
@@ -5785,7 +6023,8 @@ function buildShiniesView() {
                 let canUse = false;
                 
                 if (item.type === 'catch_assist' && gameMode === 'bonus') canUse = true;
-                if (item.type === 'guess_assist' && gameMode === 'bonus') canUse = true;
+                if (item.type === 'reroll_question' && gameMode === 'bonus') canUse = true;
+                if (item.type === 'autoguess' && gameMode === 'main') canUse = true;
                 if (item.type === 'buff') canUse = true;
 
                 if(canUse) {
@@ -5837,14 +6076,75 @@ function buildShiniesView() {
             grid.appendChild(entry);
         }
         container.appendChild(grid);
+
+        // --- ELITE FOUR CHALLENGE BOX (MODIFIED) ---
+        const badgeCount = Object.keys(earnedBadges).filter(key => !key.startsWith('failed_') && key !== 'champion').length;
+        if (badgeCount >= 8) {
+            const e4Box = document.createElement('div');
+            e4Box.className = 'e4-challenge-box';
+            
+            if (earnedBadges.champion) {
+                e4Box.classList.add('champion', 'disabled');
+                e4Box.innerHTML = `
+                    <h3>👑 Kanto Champion! 👑</h3>
+                    <p>You have conquered the Pokémon League!</p>
+                `;
+            } else {
+                e4Box.innerHTML = `
+                    <h3>Challenge the Elite Four!</h3>
+                    <p>You have all 8 badges! Prove you are the best!</p>
+                `;
+                e4Box.onclick = () => {
+                    if (e4ChallengeState.active) return;
+                    exitPokedexView();
+                    setTimeout(startE4Challenge, 200);
+                };
+            }
+            grid.appendChild(e4Box); // Append to grid to make it part of the layout
+        }
+
         return container;
     }
 
-    // --- MODIFIED: useItem function ---
+    function showCustomAlert(text, title = "Notice") {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-modal-title');
+        const textEl = document.getElementById('confirm-modal-text');
+        const okButton = document.getElementById('confirm-modal-ok');
+        const cancelButton = document.getElementById('confirm-modal-cancel');
+
+        titleEl.textContent = title;
+        textEl.textContent = text;
+        okButton.textContent = 'OK';
+        cancelButton.classList.add('hidden'); // Hide cancel button for an alert
+
+        const close = () => {
+            modal.classList.add('hidden');
+            cancelButton.classList.remove('hidden'); // Restore for next use
+        };
+
+        okButton.onclick = close;
+        cancelButton.onclick = close; // Should not be visible, but good practice
+        modal.onclick = (e) => { if (e.target === modal) close(); };
+
+        modal.classList.remove('hidden');
+    }
+
     function useItem(key) {
       if (!bag[key] || bag[key] <= 0) return;
       const item = SHOP_ITEMS[key];
       
+      let canUse = false;
+      if (item.type === 'catch_assist' && gameMode === 'bonus') canUse = true;
+      if (item.type === 'reroll_question' && gameMode === 'bonus') canUse = true;
+      if (item.type === 'autoguess' && gameMode === 'main') canUse = true;
+      if (item.type === 'buff') canUse = true;
+
+      if (!canUse) {
+          showCustomAlert("You can't use that item right now!");
+          return;
+      }
+
       sounds.correct(); 
       bag[key]--;
 
@@ -5858,10 +6158,24 @@ function buildShiniesView() {
           }
           exitPokedexView();
           setTimeout(askNextBonusQuestion, 200);
-      } else if (item.type === 'guess_assist' && key === 'pokeflute' && gameMode === 'bonus') {
-          bonusQuestions.splice(bonusIndex, 1); // Remove current question
+      } else if (item.type === 'reroll_question') { // Escape Rope
+          const allStats = ["height", "weight", "ability", "id", "egg_group", "type", "super_effective", "weak_against", "move", "location"];
+          const newStats = allStats.filter(s => !bonusQuestions.includes(s));
+          if (newStats.length > 0) {
+              bonusQuestions[bonusIndex] = shuffle(newStats)[0];
+          }
           exitPokedexView();
-          setTimeout(askNextBonusQuestion, 200); // Ask the next one
+          setTimeout(askNextBonusQuestion, 200);
+      } else if (item.type === 'autoguess') { // Poké Flute
+          exitPokedexView();
+          setTimeout(() => {
+            const buttons = document.querySelectorAll('.answer-button');
+            buttons.forEach(btn => {
+                if (btn.textContent === currentPokemon.name) {
+                    btn.click();
+                }
+            });
+          }, 200);
       } else if (item.type === 'buff') {
           if (key === 'repel') activeBuffs.repel += item.effect;
           if (key === 'luckyegg') activeBuffs.luckyegg += item.effect;
@@ -5878,7 +6192,7 @@ function buildShiniesView() {
     function setupInitialView() {
       gameMode = 'initial';
       document.querySelector('.game-container').classList.remove('info-mode-active');
-      document.getElementById('pokedex-device').classList.remove('hidden', 'gym-leader-mode');
+      document.getElementById('pokedex-device').classList.remove('hidden', 'gym-leader-mode', 'e4-mode');
       document.getElementById('pokedex-grid').classList.remove('hidden');
       document.getElementById('question-answers-area').classList.remove('hidden');
       document.getElementById('pokedex-info-display').classList.add('hidden');
@@ -5893,7 +6207,6 @@ function buildShiniesView() {
       document.getElementById("question-text").textContent = "Click the ? to begin your adventure!";
       document.getElementById("answers-grid").innerHTML = "";
       
-      // --- MODIFIED: Explicitly manage buff/pokeball visibility on init ---
       document.getElementById('bonus-pokeballs-container').classList.add('hidden');
       const hasBuffs = Object.values(activeBuffs).some(val => val > 0);
       document.getElementById('active-buffs-container').classList.toggle('hidden', !hasBuffs);
@@ -5921,7 +6234,7 @@ function buildShiniesView() {
       
       if (isMenuOpen) return;
 
-      if (gameMode === 'main' || gameMode === 'bonus' || gameMode === 'gym') {
+      if (gameMode === 'main' || gameMode === 'bonus' || gameMode === 'gym' || gameMode === 'e4') {
         const answers = document.querySelectorAll('.answer-button');
         if (answers.length > 0) {
           const keyMap = {'1': 0, '2': 1, '3': 2, '4': 3};
